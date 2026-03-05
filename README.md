@@ -22,8 +22,8 @@
 * **Localization:** flutter_localizations (Support for English & Traditional Chinese)
 
 ## ⚖️ License / 授權
-Licensed under **GPL v3**. We embrace the open-source spirit while protecting the rights of creators for commercial development.  
-本專案採用 **GPL v3** 授權。我們擁抱開源精神，同時也致力於保護創作者的商業開發權益。
+Licensed under **AGPL v3**. We embrace the open-source spirit while protecting the rights of creators for commercial development.  
+本專案採用 **AGPL v3** 授權。我們擁抱開源精神，同時也致力於保護創作者的商業開發權益。
 
 ---
 *Developed by Lumus*
