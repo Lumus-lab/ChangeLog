@@ -1,0 +1,97 @@
+{
+  "_note1": "KEEP THIS FILE! Check it into a version control system (VCS) like git.",
+  "_note2": "ObjectBox manages crucial IDs for your object model. See docs for details.",
+  "_note3": "If you have VCS merge conflicts, you must resolve them according to ObjectBox docs.",
+  "entities": [
+    {
+      "id": "1:4948003097195770275",
+      "lastPropertyId": "14:930113847811558294",
+      "name": "DivinationRecord",
+      "properties": [
+        {
+          "id": "1:2778869937900005769",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:1198118935237430364",
+          "name": "createdAt",
+          "type": 10
+        },
+        {
+          "id": "3:4178383103572880825",
+          "name": "question",
+          "type": 9
+        },
+        {
+          "id": "4:6167407322348907752",
+          "name": "method",
+          "type": 9
+        },
+        {
+          "id": "5:830802884923682237",
+          "name": "rawHexagramNumbersStr",
+          "type": 9
+        },
+        {
+          "id": "6:3614171615703364950",
+          "name": "primaryHexagramId",
+          "type": 6
+        },
+        {
+          "id": "7:2706428486105324095",
+          "name": "resultingHexagramId",
+          "type": 6
+        },
+        {
+          "id": "8:5891533520243925269",
+          "name": "changingLinesStr",
+          "type": 9
+        },
+        {
+          "id": "9:4238298586884981032",
+          "name": "interpretation",
+          "type": 9
+        },
+        {
+          "id": "10:4174436023989137301",
+          "name": "actionTaken",
+          "type": 9
+        },
+        {
+          "id": "11:4672531347152269277",
+          "name": "actualOutcome",
+          "type": 9
+        },
+        {
+          "id": "12:5775469651483899974",
+          "name": "isResolved",
+          "type": 1
+        },
+        {
+          "id": "13:8749628383766193539",
+          "name": "rawHexagramNumbers",
+          "type": 27
+        },
+        {
+          "id": "14:930113847811558294",
+          "name": "changingLines",
+          "type": 27
+        }
+      ],
+      "relations": []
+    }
+  ],
+  "lastEntityId": "1:4948003097195770275",
+  "lastIndexId": "0:0",
+  "lastRelationId": "0:0",
+  "lastSequenceId": "0:0",
+  "modelVersion": 5,
+  "modelVersionParserMinimum": 5,
+  "retiredEntityUids": [],
+  "retiredIndexUids": [],
+  "retiredPropertyUids": [],
+  "retiredRelationUids": [],
+  "version": 1
+}
