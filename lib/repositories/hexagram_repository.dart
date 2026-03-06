@@ -20,7 +20,11 @@ class HexagramRepository {
   /// 根據 ID (1~64) 取得卦
   Hexagram? getById(int id) {
     if (id < 1 || id > 64) return null;
-    return _hexagrams.firstWhere((h) => h.id == id);
+    try {
+      return _hexagrams.firstWhere((h) => h.id == id);
+    } catch (e) {
+      return null;
+    }
   }
 
   /// 根據名稱取得卦

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../providers/divination_provider.dart';
+import 'divination_result_screen.dart';
 
 class DivinationScreen extends ConsumerStatefulWidget {
   const DivinationScreen({super.key});
@@ -89,39 +90,25 @@ class _DivinationScreenState extends ConsumerState<DivinationScreen> {
     });
 
     if (mounted && resultLines != null) {
-      _showResultDialog(resultLines);
+      String methodName = _selectedMethod == 0
+          ? "數字占"
+          : _selectedMethod == 1
+          ? "金錢卦"
+          : "籌策";
+      _showResultDialog(resultLines, question, methodName);
     }
   }
 
-  void _showResultDialog(List<int> lines) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          backgroundColor: Theme.of(context).colorScheme.surface,
-          title: Text(
-            '起卦結果',
-            style: TextStyle(color: Theme.of(context).colorScheme.primary),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                '得到的六爻(由下而上)：\n$lines',
-                style: const TextStyle(fontSize: 18),
-              ),
-              const SizedBox(height: 16),
-              const Text('這組紀錄即將儲存並帶您進入解卦畫面...'),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('確定', style: TextStyle(fontSize: 18)),
-            ),
-          ],
-        );
-      },
+  void _showResultDialog(List<int> lines, String question, String method) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => DivinationResultScreen(
+          lines: lines,
+          question: question,
+          method: method,
+        ),
+      ),
     );
   }
 

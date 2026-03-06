@@ -120,3 +120,24 @@ app.*.symbols
 # AI Generated Plans
 task.md
 implementation_plan.md
+
+# API Keys
+.env
+
+# Temp scripts & intermediate data
+*.py
+iching.json
+shuogua.json
+shuogua_compile.txt
+tuan.json
+wen.json
+xiang.json
+xici.json
+xici_compile.txt
+xici_shang.json
+xici_xia.json
+xu.json
+xugua.json
+xugua_compile.txt
+zagua.json
+zagua_compile.txt

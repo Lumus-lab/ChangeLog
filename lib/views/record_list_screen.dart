@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../providers/record_list_provider.dart';
 import '../providers/hexagram_provider.dart';
+import '../services/data_transfer_service.dart';
 import 'record_detail_screen.dart';
 
 class RecordListScreen extends ConsumerWidget {
@@ -16,7 +17,49 @@ class RecordListScreen extends ConsumerWidget {
     final hexagrams = hexagramsAsync.value ?? [];
 
     return Scaffold(
-      appBar: AppBar(title: const Text('歷史日誌')),
+      appBar: AppBar(
+        title: const Text('歷史日誌'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.download),
+            tooltip: '匯入備份',
+            onPressed: () async {
+              try {
+                final count = await DataTransferService().importRecords(
+                  ref.read(recordsProvider.notifier),
+                );
+                if (count > 0 && context.mounted) {
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text('成功匯入 $count 筆紀錄')));
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text('匯入失敗: $e')));
+                }
+              }
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.share),
+            tooltip: '匯出備份',
+            onPressed: () async {
+              try {
+                await DataTransferService().exportRecords(records);
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text('匯出失敗: $e')));
+                }
+              }
+            },
+          ),
+          const SizedBox(width: 8),
+        ],
+      ),
       body: records.isEmpty
           ? Center(
               child: Column(
@@ -53,11 +96,7 @@ class RecordListScreen extends ConsumerWidget {
                 if (record.resultingHexagramId != null) {
                   try {
                     resultingName =
-                        " 之 ${hexagrams
-                            .firstWhere(
-                              (h) => h.id == record.resultingHexagramId,
-                            )
-                            .name}卦";
+                        " 之 ${hexagrams.firstWhere((h) => h.id == record.resultingHexagramId).name}卦";
                   } catch (_) {}
                 }
 
