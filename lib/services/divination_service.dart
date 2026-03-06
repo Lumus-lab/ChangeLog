@@ -1,0 +1,206 @@
+import 'dart:math';
+
+class DivinationService {
+  final _random = Random();
+
+  /// 金錢卦 (三枚銅錢)
+  /// 丟六次，每次產生 6, 7, 8, 或 9
+  /// 機率：
+  /// - 6 (老陰): 1/8
+  /// - 7 (少陽): 3/8
+  /// - 8 (少陰): 3/8
+  /// - 9 (老陽): 1/8
+  List<int> generateCoinDivination() {
+    List<int> lines = [];
+    for (int i = 0; i < 6; i++) {
+      int sum = 0;
+      for (int coin = 0; coin < 3; coin++) {
+        // 假設 2 為陰面(字), 3 為陽面(人頭)
+        // 隨機擲出 2 或 3
+        sum += _random.nextBool() ? 3 : 2;
+      }
+      lines.add(sum);
+    }
+    return lines;
+  }
+
+  /// 數字占 (梅花易數中的數字起卦)
+  /// 輸入三個數字 (大於0)
+  /// number1: 下卦 (除以8取餘數)
+  /// number2: 上卦 (除以8取餘數)
+  /// number3: 動爻 (除以6取餘數，1~6)
+  /// 回傳：包含六個數字(6, 7, 8, 9)的 List
+  List<int> generateNumberDivination(int num1, int num2, int num3) {
+    // 依先天八卦數：乾1 兌2 離3 震4 巽5 坎6 艮7 坤8
+    // 餘數0代表8
+    int lowerTrigramNumber = num1 % 8;
+    if (lowerTrigramNumber == 0) lowerTrigramNumber = 8;
+
+    int upperTrigramNumber = num2 % 8;
+    if (upperTrigramNumber == 0) upperTrigramNumber = 8;
+
+    // 取餘數決定哪一爻變 (1-6)
+    int movingLineIndex = num3 % 6;
+    if (movingLineIndex == 0) movingLineIndex = 6;
+
+    // 將八卦數轉換為三爻的陰陽值 (0:陰, 1:陽)
+    List<int> lowerLines = _trigramNumberToBinaryLines(lowerTrigramNumber);
+    List<int> upperLines = _trigramNumberToBinaryLines(upperTrigramNumber);
+
+    // 組合成本卦的六爻 (由下而上)
+    List<int> hexagramLines = [...lowerLines, ...upperLines];
+
+    // 將 0, 1 轉換成少陰(8), 少陽(7)
+    List<int> linesBase = hexagramLines.map((b) => b == 1 ? 7 : 8).toList();
+
+    // 設定動爻 (0-indexed)
+    int index = movingLineIndex - 1;
+    // 如果原本是少陽(7)，變成老陽(9)
+    // 如果原本是少陰(8)，變成老陰(6)
+    if (linesBase[index] == 7) {
+      linesBase[index] = 9;
+    } else if (linesBase[index] == 8) {
+      linesBase[index] = 6;
+    }
+
+    return linesBase;
+  }
+
+  /// 籌策 (手動輸入 6,7,8,9 的陣列，需剛好六個由下而上)
+  List<int>? generateYarrowDivination(List<int> userLines) {
+    if (userLines.length != 6) return null;
+    return userLines.toList();
+  }
+
+  /// 將八卦數轉換成三爻 (0下, 1中, 2上)
+  List<int> _trigramNumberToBinaryLines(int number) {
+    switch (number) {
+      case 1:
+        return [1, 1, 1]; // 乾 ☰ (陽陽陽)
+      case 2:
+        return [1, 1, 0]; // 兌 ☱ (陽陽陰)
+      case 3:
+        return [1, 0, 1]; // 離 ☲ (陽陰陽)
+      case 4:
+        return [1, 0, 0]; // 震 ☳ (陽陰陰)
+      case 5:
+        return [0, 1, 1]; // 巽 ☴ (陰陽陽)
+      case 6:
+        return [0, 1, 0]; // 坎 ☵ (陰陽陰)
+      case 7:
+        return [0, 0, 1]; // 艮 ☶ (陰陰陽)
+      case 8:
+        return [0, 0, 0]; // 坤 ☷ (陰陰陰)
+      default:
+        return [1, 1, 1];
+    }
+  }
+
+  /// 根據 6, 7, 8, 9 算出本卦 (Primary Hexagram) 的 ID (1-64)
+  /// 這裡採用通用的二進位映射或查表法
+  int calculatePrimaryHexagramId(List<int> lines) {
+    return _linesToHexagramId(lines, isResulting: false);
+  }
+
+  /// 根據 6, 7, 8, 9 算出變卦 (Resulting Hexagram) 的 ID
+  /// 若無動爻 (也就是沒有 6 且沒有 9)，回傳 null
+  int? calculateResultingHexagramId(List<int> lines) {
+    if (!lines.contains(6) && !lines.contains(9)) {
+      return null;
+    }
+    return _linesToHexagramId(lines, isResulting: true);
+  }
+
+  /// 通用的 Hexagram 計算
+  int _linesToHexagramId(List<int> lines, {required bool isResulting}) {
+    List<int> binaryLines = lines.map((l) {
+      if (!isResulting) {
+        // 本卦: 7(陽), 9(陽), 8(陰), 6(陰)
+        return (l == 7 || l == 9) ? 1 : 0;
+      } else {
+        // 變卦: 7(陽不受影響), 9(陽變陰), 8(陰不受影響), 6(陰變陽)
+        return (l == 7 || l == 6) ? 1 : 0;
+      }
+    }).toList();
+
+    // TODO: 結合本卦表來轉換 binary (0~63) 為標準 1~64 ID
+    // 這裡需要一張對應表，稍後實作詳細 ID lookup
+    return _lookupHexagramId(binaryLines);
+  }
+
+  // 二進位轉 64 卦 ID (通行本序)
+  // 初爻為最低位 (index 0)
+  int _lookupHexagramId(List<int> binaryLines) {
+    // 格式化為字串進行查表，比如 [1, 1, 1, 1, 1, 1] 為 "111111"
+    String binaryStr = binaryLines.join();
+    return _kingWenMap[binaryStr] ?? 1;
+  }
+
+  /// 通行本六十四卦與二進位(由下而上)的對應表
+  static const Map<String, int> _kingWenMap = {
+    '111111': 1, // 乾
+    '000000': 2, // 坤
+    '100010': 3, // 屯
+    '010001': 4, // 蒙
+    '111010': 5, // 需
+    '010111': 6, // 訟
+    '010000': 7, // 師
+    '000010': 8, // 比
+    '111011': 9, // 小畜
+    '110111': 10, // 履
+    '111000': 11, // 泰
+    '000111': 12, // 否
+    '101111': 13, // 同人
+    '111101': 14, // 大有
+    '001000': 15, // 謙
+    '000100': 16, // 豫
+    '100110': 17, // 隨
+    '011001': 18, // 蠱
+    '110000': 19, // 臨
+    '000011': 20, // 觀
+    '100101': 21, // 噬嗑
+    '101001': 22, // 賁
+    '000001': 23, // 剝
+    '100000': 24, // 復
+    '100111': 25, // 无妄
+    '111001': 26, // 大畜
+    '100001': 27, // 頤
+    '011110': 28, // 大過
+    '010010': 29, // 坎
+    '101101': 30, // 離
+    '001110': 31, // 咸
+    '011100': 32, // 恆
+    '001111': 33, // 遯
+    '111100': 34, // 大壯
+    '000101': 35, // 晉
+    '101000': 36, // 明夷
+    '101011': 37, // 家人
+    '110101': 38, // 睽
+    '001010': 39, // 蹇
+    '010100': 40, // 解
+    '110001': 41, // 損
+    '100011': 42, // 益
+    '111110': 43, // 夬
+    '011111': 44, // 姤
+    '000110': 45, // 萃
+    '011000': 46, // 升
+    '010110': 47, // 困
+    '011010': 48, // 井
+    '101110': 49, // 革
+    '011101': 50, // 鼎
+    '100100': 51, // 震
+    '001001': 52, // 艮
+    '001011': 53, // 漸
+    '110100': 54, // 歸妹
+    '101100': 55, // 豐
+    '001101': 56, // 旅
+    '011011': 57, // 巽
+    '110110': 58, // 兌
+    '010011': 59, // 渙
+    '110010': 60, // 節
+    '110011': 61, // 中孚
+    '001100': 62, // 小過
+    '101010': 63, // 既濟
+    '010101': 64, // 未濟
+  };
+}
