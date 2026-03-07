@@ -6,6 +6,7 @@ import '../models/divination_record.dart';
 import '../providers/record_list_provider.dart';
 import '../providers/hexagram_provider.dart';
 import '../services/zhuxi_interpreter_service.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 
 class RecordDetailScreen extends ConsumerStatefulWidget {
   final DivinationRecord record;
@@ -200,6 +201,39 @@ class _RecordDetailScreenState extends ConsumerState<RecordDetailScreen> {
             ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.1),
 
             const SizedBox(height: 32),
+
+            // AI 解卦區塊 (如果有存的話)
+            if (widget.record.aiInterpretation != null &&
+                widget.record.aiInterpretation!.isNotEmpty) ...[
+              Row(
+                children: [
+                  const Icon(Icons.auto_awesome, color: Colors.amber, size: 20),
+                  const SizedBox(width: 8),
+                  const Text(
+                    'AI 大師解析',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ).animate().fadeIn(delay: 250.ms),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.purple.withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: Colors.purple.withValues(alpha: 0.2),
+                  ),
+                ),
+                child: MarkdownBody(
+                  data: widget.record.aiInterpretation!,
+                  styleSheet: MarkdownStyleSheet.fromTheme(
+                    Theme.of(context),
+                  ).copyWith(p: const TextStyle(fontSize: 16, height: 1.6)),
+                ),
+              ).animate().fadeIn(delay: 280.ms),
+              const SizedBox(height: 32),
+            ],
 
             // 第三區塊：輸入反思紀錄
             Row(

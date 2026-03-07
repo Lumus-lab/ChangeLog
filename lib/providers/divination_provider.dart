@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/divination_service.dart';
 import '../services/zhuxi_interpreter_service.dart';
+import '../services/ai_interpreter_service.dart';
+import '../services/storage_service.dart';
 
 final divinationServiceProvider = Provider<DivinationService>((ref) {
   return DivinationService();
@@ -8,4 +10,9 @@ final divinationServiceProvider = Provider<DivinationService>((ref) {
 
 final zhuxiInterpreterProvider = Provider<ZhuxiInterpreterService>((ref) {
   return ZhuxiInterpreterService();
+});
+
+final aiInterpreterServiceProvider = Provider<AIInterpreterService>((ref) {
+  final storage = ref.read(storageServiceProvider);
+  return AIInterpreterService(storage);
 });

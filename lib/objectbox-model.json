@@ -5,7 +5,7 @@
   "entities": [
     {
       "id": "1:4948003097195770275",
-      "lastPropertyId": "14:930113847811558294",
+      "lastPropertyId": "15:5903624958638999895",
       "name": "DivinationRecord",
       "properties": [
         {
@@ -78,6 +78,11 @@
           "id": "14:930113847811558294",
           "name": "changingLines",
           "type": 27
+        },
+        {
+          "id": "15:5903624958638999895",
+          "name": "aiInterpretation",
+          "type": 9
         }
       ],
       "relations": []

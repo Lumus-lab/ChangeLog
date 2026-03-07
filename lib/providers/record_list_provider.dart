@@ -21,14 +21,16 @@ class RecordsNotifier extends Notifier<List<DivinationRecord>> {
     state = _repo.getAllRecords();
   }
 
-  void addRecord(DivinationRecord record) {
-    _repo.saveRecord(record);
+  DivinationRecord addRecord(DivinationRecord record) {
+    record.id = _repo.saveRecord(record);
     loadRecords();
+    return record;
   }
 
-  void updateRecord(DivinationRecord record) {
+  DivinationRecord updateRecord(DivinationRecord record) {
     _repo.saveRecord(record);
     loadRecords();
+    return record;
   }
 
   void deleteRecord(int id) {

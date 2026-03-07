@@ -1,0 +1,19 @@
+name = "iching-gemini-proxy"
+main = "src/index.js"
+compatibility_date = "2026-03-07"
+
+# KV Namespace binding 
+# You need to run `wrangler kv:namespace create HEXAGRAM_CACHE` and replace the id below
+[[kv_namespaces]]
+binding = "HEXAGRAM_CACHE"
+id = "9fba65ed9cc648f094031de487ab65cc"
+
+[vars]
+# EXPECTED_APP_ID is used for a basic CORS/App validation check.
+EXPECTED_APP_ID = "com.lumuslab.changelog" 
+
+# Note: Do not put GEMINI_API_KEY here. 
+# Run `wrangler secret put GEMINI_API_KEY` to securely add it.
+
+# To enable Cloudflare Rate Limiting natively, configure it in the Cloudflare Dashboard
+# under Security -> WAF -> Rate Limiting Rules.

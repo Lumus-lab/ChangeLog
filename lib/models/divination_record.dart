@@ -31,6 +31,9 @@ class DivinationRecord {
   /// 自己如何解卦 (解讀與心得)
   String? interpretation;
 
+  /// AI 輔助解卦紀錄
+  String? aiInterpretation;
+
   /// 決定怎麼做 (Action Plan)
   String? actionTaken;
 

@@ -13,15 +13,19 @@ class DivinationService {
   List<int> generateCoinDivination() {
     List<int> lines = [];
     for (int i = 0; i < 6; i++) {
-      int sum = 0;
-      for (int coin = 0; coin < 3; coin++) {
-        // 假設 2 為陰面(字), 3 為陽面(人頭)
-        // 隨機擲出 2 或 3
-        sum += _random.nextBool() ? 3 : 2;
-      }
-      lines.add(sum);
+      lines.add(generateSingleCoin());
     }
     return lines;
+  }
+
+  /// 擲一次三枚銅錢，產生一個爻 (6, 7, 8, 或 9)
+  int generateSingleCoin() {
+    int sum = 0;
+    for (int coin = 0; coin < 3; coin++) {
+      // 假設 2 為陰面(字), 3 為陽面(人頭)
+      sum += _random.nextBool() ? 3 : 2;
+    }
+    return sum;
   }
 
   /// 數字占 (梅花易數中的數字起卦)
@@ -123,8 +127,6 @@ class DivinationService {
       }
     }).toList();
 
-    // TODO: 結合本卦表來轉換 binary (0~63) 為標準 1~64 ID
-    // 這裡需要一張對應表，稍後實作詳細 ID lookup
     return _lookupHexagramId(binaryLines);
   }
 

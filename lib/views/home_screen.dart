@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'divination_screen.dart';
 import 'study_screen.dart';
 import 'record_list_screen.dart';
+import '../services/storage_service.dart';
+import 'explanation_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -19,6 +21,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     const StudyScreen(),
     const RecordListScreen(),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkFirstLaunch();
+    });
+  }
+
+  Future<void> _checkFirstLaunch() async {
+    final storage = ref.read(storageServiceProvider);
+    if (storage.isFirstLaunch) {
+      ExplanationScreen.show(context);
+      await storage.setFirstLaunchCompleted();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_svg/svg.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../providers/divination_provider.dart';
 import 'divination_result_screen.dart';
+import 'explanation_screen.dart';
+import 'settings_screen.dart';
 
 class DivinationScreen extends ConsumerStatefulWidget {
   const DivinationScreen({super.key});
@@ -22,6 +26,15 @@ class _DivinationScreenState extends ConsumerState<DivinationScreen> {
   final TextEditingController _yarrowCtrl = TextEditingController();
 
   bool _isAnimating = false;
+  bool _isCoinRolling = false;
+  final List<int> _coinLines = [];
+
+  void _resetCoinState() {
+    setState(() {
+      _isCoinRolling = false;
+      _coinLines.clear();
+    });
+  }
 
   void _startDivination() async {
     final question = _questionController.text.trim();
@@ -29,6 +42,11 @@ class _DivinationScreenState extends ConsumerState<DivinationScreen> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('請問您想占卜什麼事情？')));
+      return;
+    }
+
+    if (_selectedMethod == 1) {
+      _handleCoinDivinationStep(question);
       return;
     }
 
@@ -52,9 +70,6 @@ class _DivinationScreenState extends ConsumerState<DivinationScreen> {
         return;
       }
       resultLines = divService.generateNumberDivination(n1, n2, n3);
-    } else if (_selectedMethod == 1) {
-      // 金錢卦
-      resultLines = divService.generateCoinDivination();
     } else {
       // 籌策
       final input = _yarrowCtrl.text.replaceAll(' ', '').replaceAll(',', '');
@@ -90,12 +105,45 @@ class _DivinationScreenState extends ConsumerState<DivinationScreen> {
     });
 
     if (mounted && resultLines != null) {
-      String methodName = _selectedMethod == 0
-          ? "數字占"
-          : _selectedMethod == 1
-          ? "金錢卦"
-          : "籌策";
+      String methodName = _selectedMethod == 0 ? "數字占" : "籌策";
       _showResultDialog(resultLines, question, methodName);
+    }
+  }
+
+  void _handleCoinDivinationStep(String question) async {
+    if (_isCoinRolling) {
+      // Stop rolling, generate a line
+      final divService = ref.read(divinationServiceProvider);
+      final line = divService.generateSingleCoin();
+      setState(() {
+        _isCoinRolling = false;
+        _coinLines.add(line);
+      });
+
+      if (_coinLines.length >= 6) {
+        // Show result
+        setState(() {
+          _isAnimating = true;
+        });
+
+        await Future.delayed(const Duration(seconds: 2));
+
+        setState(() {
+          _isAnimating = false;
+        });
+
+        final linesCopy = List<int>.from(_coinLines);
+        _resetCoinState();
+
+        if (mounted) {
+          _showResultDialog(linesCopy, question, "金錢卦");
+        }
+      }
+    } else {
+      // Start rolling
+      setState(() {
+        _isCoinRolling = true;
+      });
     }
   }
 
@@ -120,13 +168,35 @@ class _DivinationScreenState extends ConsumerState<DivinationScreen> {
       appBar: AppBar(
         title: Row(
           mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.change_circle_outlined, color: primary),
+            SvgPicture.asset(
+              'assets/images/app_icon.svg',
+              width: 28,
+              height: 28,
+            ),
             const SizedBox(width: 8),
-            const Text('太極圖示可放這裡'),
+            const Text('先天易占'),
           ],
         ),
-        toolbarHeight: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const SettingsScreen()),
+              );
+            },
+            tooltip: '設定',
+          ),
+          IconButton(
+            icon: const Icon(Icons.info_outline),
+            onPressed: () => ExplanationScreen.show(context),
+            tooltip: '使用說明',
+          ),
+        ],
+        // toolbarHeight: 0,
       ),
       body: SafeArea(
         child: AnimatedSwitcher(
@@ -146,27 +216,14 @@ class _DivinationScreenState extends ConsumerState<DivinationScreen> {
         children: [
           Center(
             child:
-                Container(
-                      width: 100,
-                      height: 100,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: RadialGradient(
-                          colors: [
-                            primary.withValues(alpha: 0.3),
-                            Colors.transparent,
-                          ],
-                        ),
-                        border: Border.all(
-                          color: primary.withValues(alpha: 0.5),
-                          width: 2,
-                        ),
-                      ),
-                      child: Icon(Icons.cyclone, size: 50, color: primary),
+                SizedBox(
+                      width: 240,
+                      height: 240,
+                      child: SvgPicture.asset('assets/images/app_icon.svg'),
                     )
                     .animate(onPlay: (controller) => controller.repeat())
-                    .shimmer(duration: 3000.ms, color: Colors.white24)
-                    .rotate(duration: 20.seconds),
+                    .shimmer(duration: 4000.ms, color: Colors.white24)
+                    .rotate(duration: 40.seconds),
           ),
           const SizedBox(height: 48),
 
@@ -212,6 +269,7 @@ class _DivinationScreenState extends ConsumerState<DivinationScreen> {
             onSelectionChanged: (Set<int> newSelection) {
               setState(() {
                 _selectedMethod = newSelection.first;
+                _resetCoinState();
               });
             },
             style: ButtonStyle(
@@ -252,20 +310,45 @@ class _DivinationScreenState extends ConsumerState<DivinationScreen> {
           ),
 
           const SizedBox(height: 64),
-          ElevatedButton(
-                onPressed: _startDivination,
-                child: const Text('開始起卦 / Start Divination'),
-              )
-              .animate(onPlay: (controller) => controller.repeat(reverse: true))
-              .scale(
-                begin: const Offset(1, 1),
-                end: const Offset(1.02, 1.02),
-                duration: 2000.ms,
-              )
-              .shimmer(duration: 4000.ms, color: Colors.white30),
+          _buildActionButton(),
         ],
       ),
     );
+  }
+
+  Widget _buildActionButton() {
+    if (_selectedMethod == 1) {
+      String btnText = _isCoinRolling
+          ? '停止'
+          : '開始骰 (${_coinLines.length + 1}/6)';
+      return ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _isCoinRolling
+                  ? Colors.redAccent
+                  : Theme.of(context).colorScheme.primary,
+            ),
+            onPressed: _startDivination,
+            child: Text(btnText),
+          )
+          .animate(target: _isCoinRolling ? 1 : 0)
+          .scale(
+            begin: const Offset(1, 1),
+            end: const Offset(1.05, 1.05),
+            duration: 300.ms,
+          );
+    }
+
+    return ElevatedButton(
+          onPressed: _startDivination,
+          child: const Text('開始起卦 / Start Divination'),
+        )
+        .animate(onPlay: (controller) => controller.repeat(reverse: true))
+        .scale(
+          begin: const Offset(1, 1),
+          end: const Offset(1.02, 1.02),
+          duration: 2000.ms,
+        )
+        .shimmer(duration: 4000.ms, color: Colors.white30);
   }
 
   Widget _buildMethodInput() {
@@ -297,16 +380,52 @@ class _DivinationScreenState extends ConsumerState<DivinationScreen> {
               Icon(
                     Icons.monetization_on,
                     size: 64,
-                    color: Theme.of(context).colorScheme.primary,
+                    color: _isCoinRolling
+                        ? Colors.amber
+                        : Theme.of(context).colorScheme.primary,
                   )
-                  .animate(onPlay: (controller) => controller.repeat())
-                  .shimmer(duration: 2000.ms),
+                  .animate(target: _isCoinRolling ? 1 : 0)
+                  .rotate(duration: 300.ms)
+                  .shimmer(duration: 1000.ms),
               const SizedBox(height: 16),
               Text(
-                '為您隨機模擬連續拋擲三枚銅錢六次\n產生客觀的陰陽變化',
-                style: TextStyle(color: Colors.grey[300], height: 1.5),
+                '點擊下方按鈕骰六次以起卦',
+                style: TextStyle(
+                  color: Colors.grey[300],
+                  height: 1.5,
+                  fontSize: 16,
+                ),
                 textAlign: TextAlign.center,
               ),
+              if (_coinLines.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 16.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: _coinLines
+                        .map(
+                          (l) => Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 4.0,
+                            ),
+                            child: CircleAvatar(
+                              radius: 12,
+                              backgroundColor: Theme.of(
+                                context,
+                              ).colorScheme.primary.withValues(alpha: 0.2),
+                              child: Text(
+                                l.toString(),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
+                              ),
+                            ),
+                          ),
+                        )
+                        .toList(),
+                  ),
+                ),
             ],
           ),
         ),
@@ -384,31 +503,19 @@ class _DivinationScreenState extends ConsumerState<DivinationScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: primary.withValues(alpha: 0.5),
-                    width: 4,
-                  ),
-                ),
-                child: Icon(Icons.cyclone, size: 100, color: primary)
-                    .animate(onPlay: (controller) => controller.repeat())
-                    .rotate(duration: 1.seconds)
-                    .shimmer(duration: 1000.ms, color: Colors.white54),
+          SizedBox(
+                width: 180,
+                height: 180,
+                child: SvgPicture.asset('assets/images/app_icon.svg'),
               )
-              .animate(onPlay: (controller) => controller.repeat(reverse: true))
-              .scale(
-                begin: const Offset(0.9, 0.9),
-                end: const Offset(1.1, 1.1),
-                duration: 2.seconds,
-              ),
+              .animate(onPlay: (controller) => controller.repeat())
+              .rotate(duration: 10.seconds)
+              .shimmer(duration: 1000.ms, color: Colors.white54),
           const SizedBox(height: 48),
           Text(
                 '易有太極，是生兩儀\n兩儀生四象，四象生八卦...',
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: GoogleFonts.notoSansTc(
                   fontSize: 18,
                   color: primary,
                   letterSpacing: 2,

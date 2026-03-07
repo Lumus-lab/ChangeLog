@@ -22,7 +22,7 @@ final _entities = <obx_int.ModelEntity>[
   obx_int.ModelEntity(
     id: const obx_int.IdUid(1, 4948003097195770275),
     name: 'DivinationRecord',
-    lastPropertyId: const obx_int.IdUid(14, 930113847811558294),
+    lastPropertyId: const obx_int.IdUid(15, 5903624958638999895),
     flags: 0,
     properties: <obx_int.ModelProperty>[
       obx_int.ModelProperty(
@@ -107,6 +107,12 @@ final _entities = <obx_int.ModelEntity>[
         id: const obx_int.IdUid(14, 930113847811558294),
         name: 'changingLines',
         type: 27,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(15, 5903624958638999895),
+        name: 'aiInterpretation',
+        type: 9,
         flags: 0,
       ),
     ],
@@ -202,7 +208,10 @@ obx_int.ModelDefinition getObjectBoxModel() {
             ? null
             : fbb.writeListInt64(object.rawHexagramNumbers!);
         final changingLinesOffset = fbb.writeListInt64(object.changingLines);
-        fbb.startTable(15);
+        final aiInterpretationOffset = object.aiInterpretation == null
+            ? null
+            : fbb.writeString(object.aiInterpretation!);
+        fbb.startTable(16);
         fbb.addInt64(0, object.id);
         fbb.addInt64(1, object.createdAt.millisecondsSinceEpoch);
         fbb.addOffset(2, questionOffset);
@@ -217,6 +226,7 @@ obx_int.ModelDefinition getObjectBoxModel() {
         fbb.addBool(11, object.isResolved);
         fbb.addOffset(12, rawHexagramNumbersOffset);
         fbb.addOffset(13, changingLinesOffset);
+        fbb.addOffset(14, aiInterpretationOffset);
         fbb.finish(fbb.endTable());
         return object.id;
       },
@@ -289,7 +299,10 @@ obx_int.ModelDefinition getObjectBoxModel() {
               ..changingLines = const fb.ListReader<int>(
                 fb.Int64Reader(),
                 lazy: false,
-              ).vTableGet(buffer, rootOffset, 30, []);
+              ).vTableGet(buffer, rootOffset, 30, [])
+              ..aiInterpretation = const fb.StringReader(
+                asciiOptimization: true,
+              ).vTableGetNullable(buffer, rootOffset, 32);
 
         return object;
       },
@@ -369,5 +382,10 @@ class DivinationRecord_ {
   /// See [DivinationRecord.changingLines].
   static final changingLines = obx.QueryIntegerVectorProperty<DivinationRecord>(
     _entities[0].properties[13],
+  );
+
+  /// See [DivinationRecord.aiInterpretation].
+  static final aiInterpretation = obx.QueryStringProperty<DivinationRecord>(
+    _entities[0].properties[14],
   );
 }
