@@ -57,16 +57,16 @@ class ExplanationScreen extends StatelessWidget {
                   _buildSection(
                     context,
                     icon: Icons.auto_awesome,
-                    title: 'AI 解卦模式',
+                    title: 'AI 啟發觀測模式',
                     content:
-                        '您可以透過點擊看廣告來獲取免費的 AI 解卦次數。若您注重個人隱私，可以在設定中輸入您的個人 Gemini API Key (BYOK)，應用程式將直接從您的手機連線至 Google，確保您的問題不會經過任何第三方伺服器儲存。',
+                        '您可以透過點擊看廣告來獲取免費的 AI 啟發觀測次數。這不是為了算命給建議，而是透過 AI 解析卦象中的「時位」智慧，引發您的自我覺察。若您注重個人隱私，可以在設定中輸入您的個人 Gemini API Key (BYOK)，應用程式將直接從您的手機連線至 Google。',
                   ),
                   _buildSection(
                     context,
                     icon: Icons.history,
                     title: '記錄與覆盤',
                     content:
-                        '所有起卦與 AI 解卦的紀錄都會儲存在您的手機本地端。您事後可以針對紀錄進行「覆盤與驗證」，幫助您練習與精進對《易經》的理解。',
+                        '所有起卦與 AI 啟發觀測的紀錄都會儲存在您的手機本地端。您事後可以針對紀錄進行「覆盤與驗證」，幫助您練習與精進對《易經》的理解。',
                   ),
                   _buildSection(
                     context,

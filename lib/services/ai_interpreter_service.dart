@@ -76,21 +76,29 @@ class AIInterpreterService {
     );
 
     final promptBuffer = StringBuffer();
-    promptBuffer.writeln('你是一位精通《易經》與現代心理學的解卦大師。');
-    promptBuffer.writeln('使用者想問的具體問題是：「$question」');
     promptBuffer.writeln(
-      '算出的本卦是：【${primaryHexagram.name}卦】（卦辭：${primaryHexagram.description}）',
+      '你是一位深研《易經》哲學的引導者。你的目標不是「算命」或「給予指令」，而是透過卦象中蘊含的「時」與「位」的智慧，引發使用者深度思考，從而發現自己的路。',
+    );
+    promptBuffer.writeln('使用者目前的具體困惑是：「$question」');
+    promptBuffer.writeln(
+      '得出的本卦為：【${primaryHexagram.name}卦】（卦辭：${primaryHexagram.description}）',
     );
     if (resultingHexagram != null) {
       promptBuffer.writeln(
         '變卦為：【${resultingHexagram.name}卦】（卦辭：${resultingHexagram.description}）',
       );
     }
-    promptBuffer.writeln('根據傳統朱熹解卦法則，目前的解卦重心為：「$guidance」');
+    promptBuffer.writeln('根據傳統朱熹解卦法則，目前的觀測重心為：「$guidance」');
 
+    promptBuffer.writeln('\n請遵循以下原則進行解析：');
+    promptBuffer.writeln('1. **絕對不要給予直接的建議或下一步該怎麼做的指令。** 你的任務是解釋現狀的「動態性質」。');
     promptBuffer.writeln(
-      '\n請以「解卦大師」的口吻，用溫和、客觀、且現代人容易理解的白話文，結合使用者的問題，給予約 300 字以內的指引與實質建議。',
+      '2. **著重於分析「時 (Timing)」與「位 (Position, Status)」**。現在的情境是屬於積蓄力量、等待時機、還是該順勢而為？使用者的內在狀態與外在環境處於什麼樣的相對位置？',
     );
+    promptBuffer.writeln(
+      '3. **啟發與發現**。用客觀、富有哲理且溫和的白話，解析卦象如何對映使用者的問題，最後提出一個「反思性的提問」，讓使用者自己決定下一步。',
+    );
+    promptBuffer.writeln('4. **篇幅限制**。解析字數請控制在 350 字以內，格式簡潔易讀。');
 
     try {
       final content = [Content.text(promptBuffer.toString())];

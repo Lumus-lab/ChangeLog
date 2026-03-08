@@ -187,7 +187,7 @@ class DivinationResultScreen extends ConsumerWidget {
                             }
                           },
                           icon: const Icon(Icons.auto_awesome),
-                          label: const Text('✨ 獲取 AI 指引與解釋'),
+                          label: const Text('✨ 獲取 AI 啟發與觀測'),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.purple.shade700,
                             foregroundColor: Colors.white,
@@ -484,7 +484,7 @@ class _AIDialogContentState extends ConsumerState<_AIDialogContent> {
         children: [
           Icon(Icons.auto_awesome, color: Colors.amber),
           SizedBox(width: 8),
-          Text('AI 大師為您解卦...'),
+          Text('AI 啟發與觀測中...'),
         ],
       ),
       content: FutureBuilder<String>(
@@ -496,7 +496,7 @@ class _AIDialogContentState extends ConsumerState<_AIDialogContent> {
               children: [
                 CircularProgressIndicator(),
                 SizedBox(height: 16),
-                Text('大師正在推演卦理與天機...'),
+                Text('正在推演卦象中的時與位...'),
               ],
             );
           } else if (snapshot.hasError) {
