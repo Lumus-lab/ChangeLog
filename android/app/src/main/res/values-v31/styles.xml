@@ -2,7 +2,7 @@
 <resources>
     <style name="LaunchTheme" parent="@android:style/Theme.Black.NoTitleBar">
         <!-- 顯示正確比例且透明背景的圖標 -->
-        <item name="android:windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground_vector</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
         <item name="android:windowSplashScreenBackground">#121212</item>
         <!-- 強制讓圖標背景跟視窗背景一致，消除白圈 -->
         <item name="android:windowSplashScreenIconBackgroundColor">#121212</item>
