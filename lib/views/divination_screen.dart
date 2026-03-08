@@ -176,7 +176,7 @@ class _DivinationScreenState extends ConsumerState<DivinationScreen> {
               height: 28,
             ),
             const SizedBox(width: 8),
-            const Text('先天易占'),
+            const Text('易占'),
           ],
         ),
         actions: [

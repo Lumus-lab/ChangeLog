@@ -52,7 +52,7 @@ class ExplanationScreen extends StatelessWidget {
                     icon: Icons.explore,
                     title: '如何起卦？',
                     content:
-                        '1. 數字占：隨機三個數字(梅花易數)\n2. 金錢卦：模擬丟六枚硬幣求取六爻\n3. 籌策：傳統籌策算法，自己輸入獲得的六爻(6,7,8,9)',
+                        '1. 數字占：隨意聯想三組三位數（例如 365、888），百位數不可為 0\n2. 金錢卦：模擬丟六枚硬幣求取六爻\n3. 籌策：傳統籌策算法，自己輸入獲得的六爻(6,7,8,9)',
                   ),
                   _buildSection(
                     context,

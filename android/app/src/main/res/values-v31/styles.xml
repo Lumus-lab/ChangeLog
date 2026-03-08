@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <style name="LaunchTheme" parent="@android:style/Theme.Black.NoTitleBar">
-        <!-- 將系統自動生成的圖標設為透明，徹底隱藏白圈 -->
-        <item name="android:windowSplashScreenAnimatedIcon">@android:color/transparent</item>
+        <!-- 顯示正確比例且透明背景的圖標 -->
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
         <item name="android:windowSplashScreenBackground">#121212</item>
-        <item name="android:windowSplashScreenIconBackgroundColor">@android:color/transparent</item>
+        <!-- 強制讓圖標背景跟視窗背景一致，消除白圈 -->
+        <item name="android:windowSplashScreenIconBackgroundColor">#121212</item>
         
-        <!-- 顯示我們自定義的、帶有黑底和八卦的背景 -->
+        <!-- 作為後備背景（針對非 Android 12 的情況） -->
         <item name="android:windowBackground">@drawable/launch_background</item>
     </style>
 

@@ -1,0 +1,45 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="1024"
+    android:viewportHeight="1024">
+    <!-- Background circle as well for the standard foreground icon if needed, or just let Android layer them -->
+    <!-- The colors in your SVG were #121212 (dark) and #DBB641 (gold) -->
+    <group android:translateX="512" android:translateY="512" android:scaleX="0.66" android:scaleY="0.66">
+        <group android:translateX="-512" android:translateY="-512">
+            <!-- Central Taiji -->
+            <group android:translateX="512" android:translateY="512">
+                <!-- Circle border -->
+                <path
+                    android:strokeColor="#DBB641"
+                    android:strokeWidth="15"
+                    android:pathData="M0,0 m-140,0 a140,140 0,1 1 280,0 a140,140 0,1 1 -280,0" />
+                <!-- S-shape path (Gold) -->
+                <path
+                    android:fillColor="#DBB641"
+                    android:pathData="M 0,-140 A 140,140 0 0,1 0,140 A 70,70 0 0,1 0,0 A 70,70 0 0,0 0,-140 Z" />
+                <!-- Dark Side (Using filling) -->
+                <path
+                    android:fillColor="#121212"
+                    android:pathData="M 0,-140 A 140,140 0 0,0 0,140 A 70,70 0 0,0 0,0 A 70,70 0 0,1 0,-140 Z" />
+                <!-- Dots -->
+                <path
+                    android:fillColor="#121212"
+                    android:pathData="M 0,70 m-28,0 a28,28 0,1 1 56,0 a28,28 0,1 1 -56,0" />
+                <path
+                    android:fillColor="#DBB641"
+                    android:pathData="M 0,-70 m-28,0 a28,28 0,1 1 56,0 a28,28 0,1 1 -56,0" />
+            </group>
+
+            <!-- Trigrams (Gold) -->
+            <!-- Ch'ien -->
+            <path android:fillColor="#DBB641" android:pathData="M427,95h170v45h-170zM427,160h170v45h-170zM427,225h170v45h-170z"/>
+            <!-- K'un -->
+            <path android:fillColor="#DBB641" android:pathData="M427,799h61v45h-61zM536,799h61v45h-61zM427,864h61v45h-61zM536,864h61v45h-61zM427,929h61v45h-61zM536,929h61v45h-61z"/>
+            <!-- Li -->
+            <path android:fillColor="#DBB641" android:pathData="M95,427h45v170H95zM160,427h45v61h-45zM160,536h45v61h-45zM225,427h45v170h-45z"/>
+            <!-- K'an -->
+            <path android:fillColor="#DBB641" android:pathData="M799,427h45v61h-45zM799,536h45v61h-45zM864,427h45v170h-45zM929,427h45v61h-45zM929,536h45v61h-45z"/>
+        </group>
+    </group>
+</vector>
