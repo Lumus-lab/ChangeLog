@@ -1,0 +1,67 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <!-- Solid Black Background -->
+  <rect width="1024" height="1024" fill="#121212"/>
+  
+  <!-- Content with 10% margin (scale to 0.8) to allow for safe zone -->
+  <g transform="translate(512, 512) scale(0.8) translate(-512, -512)">
+    
+    <!-- Central Taiji -->
+    <g transform="translate(512, 512)">
+      <circle r="140" fill="#121212" stroke="#DBB641" stroke-width="15"/>
+      <path d="M 0 -140 A 140 140 0 0 1 0 140 A 70 70 0 0 1 0 0 A 70 70 0 0 0 0 -140 Z" fill="#DBB641"/>
+      <circle cy="70" r="28" fill="#121212"/>
+      <circle cy="-70" r="28" fill="#DBB641"/>
+    </g>
+    
+    <defs>
+      <g id="solid">
+        <line x1="-85" y1="0" x2="85" y2="0" stroke="#DBB641" stroke-width="45" stroke-linecap="round"/>
+      </g>
+      <g id="broken">
+        <line x1="-85" y1="0" x2="-24" y2="0" stroke="#DBB641" stroke-width="45" stroke-linecap="round"/>
+        <line x1="24" y1="0" x2="85" y2="0" stroke="#DBB641" stroke-width="45" stroke-linecap="round"/>
+      </g>
+    </defs>
+
+    <g transform="translate(512, 160)">
+      <g transform="translate(0, -65)"><use href="#solid"/></g>
+      <g transform="translate(0, 0)"><use href="#solid"/></g>
+      <g transform="translate(0, 65)"><use href="#solid"/></g>
+    </g>
+    <g transform="translate(512, 864)">
+      <g transform="translate(0, -65)"><use href="#broken"/></g>
+      <g transform="translate(0, 0)"><use href="#broken"/></g>
+      <g transform="translate(0, 65)"><use href="#broken"/></g>
+    </g>
+    <g transform="translate(160, 512) rotate(-90)">
+      <g transform="translate(0, -65)"><use href="#solid"/></g>
+      <g transform="translate(0, 0)"><use href="#broken"/></g>
+      <g transform="translate(0, 65)"><use href="#solid"/></g>
+    </g>
+    <g transform="translate(864, 512) rotate(90)">
+      <g transform="translate(0, -65)"><use href="#broken"/></g>
+      <g transform="translate(0, 0)"><use href="#solid"/></g>
+      <g transform="translate(0, 65)"><use href="#broken"/></g>
+    </g>
+    <g transform="translate(263, 263) rotate(-45)">
+      <g transform="translate(0, -65)"><use href="#broken"/></g>
+      <g transform="translate(0, 0)"><use href="#solid"/></g>
+      <g transform="translate(0, 65)"><use href="#solid"/></g>
+    </g>
+    <g transform="translate(263, 761) rotate(-135)">
+      <g transform="translate(0, -65)"><use href="#broken"/></g>
+      <g transform="translate(0, 0)"><use href="#broken"/></g>
+      <g transform="translate(0, 65)"><use href="#solid"/></g>
+    </g>
+    <g transform="translate(761, 263) rotate(45)">
+      <g transform="translate(0, -65)"><use href="#solid"/></g>
+      <g transform="translate(0, 0)"><use href="#solid"/></g>
+      <g transform="translate(0, 65)"><use href="#broken"/></g>
+    </g>
+    <g transform="translate(761, 761) rotate(135)">
+      <g transform="translate(0, -65)"><use href="#solid"/></g>
+      <g transform="translate(0, 0)"><use href="#broken"/></g>
+      <g transform="translate(0, 65)"><use href="#broken"/></g>
+    </g>
+  </g>
+</svg>

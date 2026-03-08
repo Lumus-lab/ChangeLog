@@ -45,6 +45,10 @@ class ChangeLogApp extends StatelessWidget {
     const backgroundColor = Color(0xFF0D0D10);
     const surfaceColor = Color(0xFF19191D);
 
+    final baseTheme = ThemeData.dark();
+
+    final textTheme = GoogleFonts.notoSansTcTextTheme(baseTheme.textTheme);
+
     return MaterialApp(
       title: 'ChangeLog 易經',
       debugShowCheckedModeBanner: false,
@@ -60,7 +64,7 @@ class ChangeLogApp extends StatelessWidget {
           onSurface: Colors.white,
         ),
         scaffoldBackgroundColor: backgroundColor,
-        textTheme: GoogleFonts.notoSansTcTextTheme(ThemeData.dark().textTheme),
+        textTheme: textTheme,
         appBarTheme: AppBarTheme(
           backgroundColor: Colors.transparent,
           elevation: 0,
@@ -91,9 +95,9 @@ class ChangeLogApp extends StatelessWidget {
             ),
             padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 24),
             textStyle: GoogleFonts.notoSansTc(
-              fontSize: 18,
+              fontSize: 16,
               fontWeight: FontWeight.bold,
-              letterSpacing: 1.5,
+              letterSpacing: 1.2,
             ),
           ),
         ),

@@ -13,6 +13,7 @@ import 'settings_screen.dart';
 import '../../services/ad_service.dart';
 import '../../services/storage_service.dart';
 import '../../providers/database_provider.dart';
+import '../../providers/usage_provider.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 
 class DivinationResultScreen extends ConsumerWidget {
@@ -187,17 +188,16 @@ class DivinationResultScreen extends ConsumerWidget {
                             }
                           },
                           icon: const Icon(Icons.auto_awesome),
-                          label: const Text('✨ 獲取 AI 啟發與觀測'),
+                          label: const FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text('獲取 AI 啟發與觀測'),
+                          ),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.purple.shade700,
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 24,
-                              vertical: 18,
-                            ),
-                            textStyle: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
+                              horizontal: 16,
+                              vertical: 12,
                             ),
                             elevation: 8,
                             shadowColor: Colors.purple.withValues(alpha: 0.5),
@@ -449,42 +449,61 @@ class _AIDialogContentState extends ConsumerState<_AIDialogContent> {
           resultingHexagram: widget.resultingHexagram,
           guidance: widget.guidance,
         );
+
+    // 成功執行的話，刷新點數 (AIInterpreterService 內部會扣除)
+    _interpretationFuture.then((_) {
+      if (mounted) {
+        ref.read(aiCreditsProvider.notifier).refresh();
+      }
+    });
   }
 
   void _watchAd() {
     setState(() => _isLoadingAd = true);
-    AdService.loadRewardedAd(
-      onAdLoaded: (ad) {
-        setState(() => _isLoadingAd = false);
-        ad.show(
-          onUserEarnedReward: (view, reward) async {
-            final storage = ref.read(storageServiceProvider);
-            await storage.addAdCredits(3);
-            if (mounted) {
-              setState(() {
-                _startInterpretation();
-              });
-            }
-          },
-        );
+    AdService.showRewardedAd(
+      onRewardEarned: (reward) async {
+        // 使用固定的 3 次獎勵，不再依賴廣告平台回傳值
+        const fixedReward = 3;
+
+        await ref.read(aiCreditsProvider.notifier).addCredits(fixedReward);
+        if (mounted) {
+          setState(() {
+            _isLoadingAd = false;
+            _startInterpretation();
+          });
+        }
       },
-      onAdFailedToLoad: (err) {
-        setState(() => _isLoadingAd = false);
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('廣告載入失敗：${err.message}')));
+      onAdFailed: () {
+        if (mounted) {
+          setState(() => _isLoadingAd = false);
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('廣告載入失敗，請稍後再試')));
+        }
       },
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final storage = ref.watch(storageServiceProvider);
+    final currentCredits = storage.adCredits;
+
     return AlertDialog(
-      title: const Row(
+      title: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Icon(Icons.auto_awesome, color: Colors.amber),
-          SizedBox(width: 8),
-          Text('AI 啟發與觀測中...'),
+          const Row(
+            children: [
+              Icon(Icons.auto_awesome, color: Colors.amber),
+              SizedBox(width: 8),
+              Text('AI 啟發與觀測中...'),
+            ],
+          ),
+          Text(
+            '剩餘 $currentCredits 次',
+            style: const TextStyle(fontSize: 12, color: Colors.grey),
+          ),
         ],
       ),
       content: FutureBuilder<String>(
@@ -507,7 +526,7 @@ class _AIDialogContentState extends ConsumerState<_AIDialogContent> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  isAdException ? '您的免費 AI 解卦額度已用盡。' : '發生錯誤: \\n$errStr',
+                  isAdException ? '您的免費 AI 解卦額度已用盡。' : '發生錯誤: \n$errStr',
                   style: const TextStyle(color: Colors.redAccent),
                 ),
                 const SizedBox(height: 24),
@@ -518,7 +537,7 @@ class _AIDialogContentState extends ConsumerState<_AIDialogContent> {
                     ElevatedButton.icon(
                       onPressed: _watchAd,
                       icon: const Icon(Icons.play_circle_filled),
-                      label: const Text('觀看廣告獲取 3 次額度'),
+                      label: const Text('觀看廣告獲取額度'),
                     ),
                   const SizedBox(height: 12),
                   TextButton(
@@ -580,7 +599,9 @@ class _AIDialogContentState extends ConsumerState<_AIDialogContent> {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(content: Text('AI 解卦已成功更新至紀錄！')),
                           );
+                          // 只要離開結果對話框，就嘗試顯示插頁廣告
                           Navigator.of(context).pop();
+                          AdService.showInterstitialAd();
                         }
                       }
                     }
@@ -593,7 +614,13 @@ class _AIDialogContentState extends ConsumerState<_AIDialogContent> {
             },
           ),
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () {
+              if (mounted) {
+                Navigator.of(context).pop();
+                // 每次手動關閉也顯示插頁廣告
+                AdService.showInterstitialAd();
+              }
+            },
             child: const Text('了解 / 關閉'),
           ),
         ],
