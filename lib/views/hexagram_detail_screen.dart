@@ -55,6 +55,14 @@ class HexagramDetailScreen extends StatelessWidget {
               '卦辭',
               hexagram.description,
             ).animate().fadeIn(delay: 100.ms).slideX(begin: 0.1, end: 0),
+            if (hexagram.tuan != null) ...[
+              const SizedBox(height: 24),
+              _buildSection(
+                context,
+                '彖傳',
+                hexagram.tuan!,
+              ).animate().fadeIn(delay: 150.ms).slideX(begin: 0.1, end: 0),
+            ],
             if (hexagram.greatImage != null) ...[
               const SizedBox(height: 24),
               _buildSection(

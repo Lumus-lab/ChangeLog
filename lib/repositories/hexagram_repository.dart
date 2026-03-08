@@ -11,7 +11,20 @@ class HexagramRepository {
       'assets/data/hexagrams.json',
     );
     final List<dynamic> jsonList = jsonDecode(jsonString);
-    _hexagrams = jsonList.map((json) => Hexagram.fromJson(json)).toList();
+
+    // 載入 彖傳
+    final String tuanString = await rootBundle.loadString(
+      'assets/data/tuan.json',
+    );
+    final Map<String, dynamic> tuanMap = jsonDecode(tuanString);
+
+    _hexagrams = jsonList.map((json) {
+      final hexagramJson = Map<String, dynamic>.from(json);
+      // 從 tuan.json 中讀取對應的 彖傳
+      final id = hexagramJson['id'] as int;
+      hexagramJson['tuan'] = tuanMap['iching__$id'];
+      return Hexagram.fromJson(hexagramJson);
+    }).toList();
   }
 
   /// 取得所有卦
