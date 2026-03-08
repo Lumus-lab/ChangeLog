@@ -36,35 +36,40 @@ class DivinationService {
   /// 回傳：包含六個數字(6, 7, 8, 9)的 List
   List<int> generateNumberDivination(int num1, int num2, int num3) {
     // 依先天八卦數：乾1 兌2 離3 震4 巽5 坎6 艮7 坤8
-    // 餘數0代表8
     int lowerTrigramNumber = num1 % 8;
     if (lowerTrigramNumber == 0) lowerTrigramNumber = 8;
 
     int upperTrigramNumber = num2 % 8;
     if (upperTrigramNumber == 0) upperTrigramNumber = 8;
 
-    // 取餘數決定哪一爻變 (1-6)
-    int movingLineIndex = num3 % 6;
-    if (movingLineIndex == 0) movingLineIndex = 6;
+    // --- 關鍵修正：依照使用者要求的餘數規則定變爻 ---
+    // 餘1=初爻, 餘2=二爻, 餘3=三爻, 餘4=四爻, 餘5=五爻, 餘0(整除)=上爻
+    int remainder = num3 % 6;
+    int movingYaoPosition; // 1 to 6
+    if (remainder == 0) {
+      movingYaoPosition = 6; // 上爻
+    } else {
+      movingYaoPosition = remainder;
+    }
 
-    // 將八卦數轉換為三爻的陰陽值 (0:陰, 1:陽)
+    // 轉換為 0-based index (0=初爻, 5=上爻)
+    int targetIndex = movingYaoPosition - 1;
+
+    // 將八卦數轉換為三爻 (由下而上)
     List<int> lowerLines = _trigramNumberToBinaryLines(lowerTrigramNumber);
     List<int> upperLines = _trigramNumberToBinaryLines(upperTrigramNumber);
 
-    // 組合成本卦的六爻 (由下而上)
+    // 組合本卦 (Index 0~2 為下卦, 3~5 為上卦)
     List<int> hexagramLines = [...lowerLines, ...upperLines];
 
-    // 將 0, 1 轉換成少陰(8), 少陽(7)
+    // 轉換為少陽(7)與少陰(8)
     List<int> linesBase = hexagramLines.map((b) => b == 1 ? 7 : 8).toList();
 
-    // 設定動爻 (0-indexed)
-    int index = movingLineIndex - 1;
-    // 如果原本是少陽(7)，變成老陽(9)
-    // 如果原本是少陰(8)，變成老陰(6)
-    if (linesBase[index] == 7) {
-      linesBase[index] = 9;
-    } else if (linesBase[index] == 8) {
-      linesBase[index] = 6;
+    // 執行變爻：7(少陽) -> 9(老陽); 8(少陰) -> 6(老陰)
+    if (linesBase[targetIndex] == 7) {
+      linesBase[targetIndex] = 9;
+    } else {
+      linesBase[targetIndex] = 6;
     }
 
     return linesBase;

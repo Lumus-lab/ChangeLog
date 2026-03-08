@@ -28,6 +28,7 @@ class AIInterpreterService {
     required Hexagram primaryHexagram,
     Hexagram? resultingHexagram,
     required String guidance,
+    required List<int> lines,
   }) async {
     // 1. Check for BYOK API Key
     final byokKey = await _storage.getByokApiKey();
@@ -40,6 +41,7 @@ class AIInterpreterService {
         primaryHexagram: primaryHexagram,
         resultingHexagram: resultingHexagram,
         guidance: guidance,
+        lines: lines,
       );
     } else {
       // 預設模式：Cloudflare Worker (檢查廣告額度)
@@ -53,6 +55,7 @@ class AIInterpreterService {
           primaryHexagram: primaryHexagram,
           resultingHexagram: resultingHexagram,
           guidance: guidance,
+          lines: lines,
         );
         // Deduct 1 credit upon success
         await _storage.deductAdCredit();
@@ -69,11 +72,9 @@ class AIInterpreterService {
     required Hexagram primaryHexagram,
     Hexagram? resultingHexagram,
     required String guidance,
+    required List<int> lines,
   }) async {
-    final model = GenerativeModel(
-      model: 'gemini-3.1-flash-lite-preview',
-      apiKey: apiKey,
-    );
+    final model = GenerativeModel(model: 'gemini-1.5-flash', apiKey: apiKey);
 
     final promptBuffer = StringBuffer();
     promptBuffer.writeln(
@@ -83,6 +84,26 @@ class AIInterpreterService {
     promptBuffer.writeln(
       '得出的本卦為：【${primaryHexagram.name}卦】（卦辭：${primaryHexagram.description}）',
     );
+
+    // 列出動爻及其爻辭，加強 AI 對「位」的認知
+    List<int> changingIndices = [];
+    for (int i = 0; i < lines.length; i++) {
+      if (lines[i] == 6 || lines[i] == 9) {
+        changingIndices.add(i);
+      }
+    }
+
+    if (changingIndices.isNotEmpty) {
+      promptBuffer.writeln('動爻資訊：');
+      for (var idx in changingIndices) {
+        if (idx >= 0 && idx < primaryHexagram.lines.length) {
+          promptBuffer.writeln(
+            '- ${_getYaoName(idx)}發動：${primaryHexagram.lines[idx]}',
+          );
+        }
+      }
+    }
+
     if (resultingHexagram != null) {
       promptBuffer.writeln(
         '變卦為：【${resultingHexagram.name}卦】（卦辭：${resultingHexagram.description}）',
@@ -93,7 +114,7 @@ class AIInterpreterService {
     promptBuffer.writeln('\n請遵循以下原則進行解析：');
     promptBuffer.writeln('1. **絕對不要給予直接的建議或下一步該怎麼做的指令。** 你的任務是解釋現狀的「動態性質」。');
     promptBuffer.writeln(
-      '2. **著重於分析「時 (Timing)」與「位 (Position, Status)」**。現在的情境是屬於積蓄力量、等待時機、還是該順勢而為？使用者的內在狀態與外在環境處於什麼樣的相對位置？',
+      '2. **著重於分析「時 (Timing)」與「位 (Position, Status)」**。根據上述動爻的「位置」與「爻辭」內容，解析目前的情境是屬於積蓄力量、等待時機、還是該順勢而為？使用者的內在狀態與外在環境處於什麼樣的相對位置？',
     );
     promptBuffer.writeln(
       '3. **啟發與發現**。用客觀、富有哲理且溫和的白話，解析卦象如何對映使用者的問題，最後提出一個「反思性的提問」，讓使用者自己決定下一步。',
@@ -114,6 +135,7 @@ class AIInterpreterService {
     required Hexagram primaryHexagram,
     Hexagram? resultingHexagram,
     required String guidance,
+    required List<int> lines,
   }) async {
     // Call Cloudflare Worker
     final response = await http.post(
@@ -127,6 +149,7 @@ class AIInterpreterService {
         'primaryHex': primaryHexagram.name,
         'resultingHex': resultingHexagram?.name,
         'guidance': guidance,
+        'lines': lines, // Pass raw lines for worker-side processing if needed
         'adToken': 'placeholder-token',
       }),
     );
@@ -139,6 +162,25 @@ class AIInterpreterService {
       throw Exception('無效的回傳格式');
     } else {
       throw Exception('HTTP Status ${response.statusCode}: ${response.body}');
+    }
+  }
+
+  String _getYaoName(int index) {
+    switch (index) {
+      case 0:
+        return "初爻";
+      case 1:
+        return "二爻";
+      case 2:
+        return "三爻";
+      case 3:
+        return "四爻";
+      case 4:
+        return "五爻";
+      case 5:
+        return "上爻";
+      default:
+        return "";
     }
   }
 }

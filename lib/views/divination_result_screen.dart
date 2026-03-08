@@ -47,13 +47,13 @@ class DivinationResultScreen extends ConsumerWidget {
         final interpreter = ZhuxiInterpreterService();
 
         // 1. Calculate Primary Hexagram ID
-        int primaryId = _linesToId(lines, isResulting: false);
+        int primaryId = _linesToHexagramId(lines, isResulting: false);
         Hexagram? primaryHex = hexRepository.getById(primaryId);
 
         // 2. Calculate Resulting Hexagram ID
         bool hasChangingLines = lines.contains(6) || lines.contains(9);
         int? resultingId = hasChangingLines
-            ? _linesToId(lines, isResulting: true)
+            ? _linesToHexagramId(lines, isResulting: true)
             : null;
         Hexagram? resultingHex = resultingId != null
             ? hexRepository.getById(resultingId)
@@ -184,6 +184,7 @@ class DivinationResultScreen extends ConsumerWidget {
                                 resultingHex,
                                 guidance,
                                 savedRecord.id,
+                                lines,
                               );
                             }
                           },
@@ -257,6 +258,7 @@ class DivinationResultScreen extends ConsumerWidget {
     Hexagram? resultingHexagram,
     String guidance,
     int? recordId,
+    List<int> lines,
   ) {
     showDialog(
       context: context,
@@ -268,6 +270,7 @@ class DivinationResultScreen extends ConsumerWidget {
           resultingHexagram: resultingHexagram,
           guidance: guidance,
           recordId: recordId,
+          lines: lines,
         );
       },
     );
@@ -330,17 +333,25 @@ class DivinationResultScreen extends ConsumerWidget {
     );
   }
 
-  // 二進位轉 64 卦 ID (通行本序)
-  int _linesToId(List<int> originalLines, {required bool isResulting}) {
-    List<int> binaryLines = originalLines.map((l) {
+  int _linesToHexagramId(List<int> lines, {required bool isResulting}) {
+    List<int> binaryLines = lines.map((l) {
       if (!isResulting) {
         return (l == 7 || l == 9) ? 1 : 0;
       } else {
-        return (l == 7 || l == 6) ? 1 : 0;
+        // 修正這裡的變爻對應
+        if (l == 6) return 1; // 老陰變陽
+        if (l == 9) return 0; // 老陽變陰
+        return (l == 7) ? 1 : 0; // 少陽為陽，少陰為陰
       }
     }).toList();
+
+    return _lookupHexagramId(binaryLines);
+  }
+
+  int _lookupHexagramId(List<int> binaryLines) {
     String binaryStr = binaryLines.join();
-    return _kingWenMap[binaryStr] ?? 1;
+    return _kingWenMap[binaryStr] ??
+        1; // Default to 1 (乾) if not found, though it should always be found.
   }
 
   static const Map<String, int> _kingWenMap = {
@@ -417,6 +428,7 @@ class _AIDialogContent extends ConsumerStatefulWidget {
   final Hexagram? resultingHexagram;
   final String guidance;
   final int? recordId;
+  final List<int> lines;
 
   const _AIDialogContent({
     required this.question,
@@ -424,6 +436,7 @@ class _AIDialogContent extends ConsumerStatefulWidget {
     this.resultingHexagram,
     required this.guidance,
     this.recordId,
+    required this.lines,
   });
 
   @override
@@ -448,6 +461,7 @@ class _AIDialogContentState extends ConsumerState<_AIDialogContent> {
           primaryHexagram: widget.primaryHexagram,
           resultingHexagram: widget.resultingHexagram,
           guidance: widget.guidance,
+          lines: widget.lines,
         );
 
     // 成功執行的話，刷新點數 (AIInterpreterService 內部會扣除)
