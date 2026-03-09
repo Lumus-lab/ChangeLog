@@ -2,14 +2,27 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../models/hexagram.dart';
 
+import 'widgets/hexagram_widget.dart';
+
 class HexagramDetailScreen extends StatelessWidget {
   final Hexagram hexagram;
 
   const HexagramDetailScreen({super.key, required this.hexagram});
 
+  List<int> _getHexagramLines() {
+    // 從爻辭中解析陰陽屬性 (前六爻)
+    // 陽爻為 7 (少陽), 陰爻為 8 (少陰)
+    return hexagram.lines.take(6).map((line) {
+      if (line.contains('九')) return 7;
+      if (line.contains('六')) return 8;
+      return 7; // 預設為陽
+    }).toList();
+  }
+
   @override
   Widget build(BuildContext context) {
     final primary = Theme.of(context).colorScheme.primary;
+    final drawnLines = _getHexagramLines();
 
     return Scaffold(
       appBar: AppBar(title: Text('第 ${hexagram.id} 卦')),
@@ -18,13 +31,15 @@ class HexagramDetailScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            // Header Row: Name on Left, Hexagram on Right
             Center(
               child: Hero(
                 tag: 'hexagram_id_${hexagram.id}',
                 child: Container(
-                  padding: const EdgeInsets.all(32),
+                  constraints: const BoxConstraints(maxWidth: 400),
+                  padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
-                    shape: BoxShape.circle,
+                    borderRadius: BorderRadius.circular(24),
                     color: primary.withValues(alpha: 0.1),
                     border: Border.all(
                       color: primary.withValues(alpha: 0.5),
@@ -34,17 +49,52 @@ class HexagramDetailScreen extends StatelessWidget {
                       BoxShadow(
                         color: primary.withValues(alpha: 0.2),
                         blurRadius: 20,
-                        spreadRadius: 5,
+                        spreadRadius: 2,
                       ),
                     ],
                   ),
-                  child: Text(
-                    hexagram.name,
-                    style: TextStyle(
-                      fontSize: 48,
-                      color: primary,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      // Left: Name
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            hexagram.name,
+                            style: TextStyle(
+                              fontSize: 64,
+                              color: primary,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            '${hexagram.name}卦',
+                            style: TextStyle(
+                              fontSize: 18,
+                              color: primary.withValues(alpha: 0.7),
+                              letterSpacing: 4,
+                            ),
+                          ),
+                        ],
+                      ),
+                      // Divider
+                      Container(
+                        height: 100,
+                        width: 1,
+                        color: primary.withValues(alpha: 0.3),
+                      ),
+                      // Right: Hexagram Graphic
+                      HexagramWidget(
+                        lines: drawnLines,
+                        lineWidth: 100,
+                        lineHeight: 14,
+                        spacing: 10,
+                        yangColor: primary,
+                        yinColor: primary,
+                      ),
+                    ],
                   ),
                 ),
               ),

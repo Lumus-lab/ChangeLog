@@ -131,7 +131,7 @@ class DivinationResultScreen extends ConsumerWidget {
                     if (resultingHex != null)
                       _buildHexagramColumn(
                         context,
-                        "變卦",
+                        "之卦",
                         resultingHex,
                         lines,
                         true,

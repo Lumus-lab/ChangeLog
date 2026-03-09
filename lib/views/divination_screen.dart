@@ -36,6 +36,18 @@ class _DivinationScreenState extends ConsumerState<DivinationScreen> {
     });
   }
 
+  void _resetForm() {
+    setState(() {
+      _questionController.clear();
+      _num1Ctrl.clear();
+      _num2Ctrl.clear();
+      _num3Ctrl.clear();
+      _yarrowCtrl.clear();
+      _selectedMethod = 0;
+      _resetCoinState();
+    });
+  }
+
   void _startDivination() async {
     final question = _questionController.text.trim();
     if (question.isEmpty) {
@@ -147,8 +159,12 @@ class _DivinationScreenState extends ConsumerState<DivinationScreen> {
     }
   }
 
-  void _showResultDialog(List<int> lines, String question, String method) {
-    Navigator.push(
+  void _showResultDialog(
+    List<int> lines,
+    String question,
+    String method,
+  ) async {
+    await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => DivinationResultScreen(
@@ -158,6 +174,9 @@ class _DivinationScreenState extends ConsumerState<DivinationScreen> {
         ),
       ),
     );
+    if (mounted) {
+      _resetForm();
+    }
   }
 
   @override
@@ -247,6 +266,42 @@ class _DivinationScreenState extends ConsumerState<DivinationScreen> {
               ),
             ),
           ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.2, end: 0),
+
+          const SizedBox(height: 16),
+          // 三不占與須知
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: primary.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: primary.withValues(alpha: 0.2)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.gavel, size: 18, color: primary),
+                    const SizedBox(width: 8),
+                    Text(
+                      '占卦須知 (三不占)',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: primary,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                _buildRuleItem('不誠不占：', '心意不誠者不占'),
+                _buildRuleItem('不義不占：', '不義之飾、違法之事不占'),
+                _buildRuleItem('不疑不占：', '無所疑惑、僅供戲玩不占'),
+                const Divider(height: 24),
+                _buildRuleItem('易經誡示：', '「初筮告，再三瀆，瀆則不告」— 同一事不可連占。'),
+              ],
+            ),
+          ).animate().fadeIn(delay: 250.ms).slideY(begin: 0.1, end: 0),
 
           const SizedBox(height: 32),
           Text(
@@ -527,6 +582,24 @@ class _DivinationScreenState extends ConsumerState<DivinationScreen> {
               .then()
               .fadeOut(duration: 1.seconds, delay: 1.seconds),
         ],
+      ),
+    );
+  }
+
+  Widget _buildRuleItem(String title, String content) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4.0),
+      child: RichText(
+        text: TextSpan(
+          style: TextStyle(fontSize: 13, color: Colors.grey[400], height: 1.5),
+          children: [
+            TextSpan(
+              text: title,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            TextSpan(text: content),
+          ],
+        ),
       ),
     );
   }

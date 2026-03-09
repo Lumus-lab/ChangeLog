@@ -22,10 +22,10 @@ class DivinationRecord {
   /// 本卦 (Primary Hexagram) 1~64的ID或名稱
   int primaryHexagramId;
 
-  /// 變卦 (Relating Hexagram) 1~64的ID或名稱 (若無動爻則為null)
+  /// 之卦 (Relating Hexagram) 1~64的ID或名稱 (若無變爻則為null)
   int? resultingHexagramId;
 
-  /// 動爻位置 (例如: "[2, 5]" 代表第二爻和第五爻動)
+  /// 變爻位置 (例如: "[2, 5]" 代表第二爻和第五爻變)
   String? changingLinesStr;
 
   /// 自己如何解卦 (解讀與心得)

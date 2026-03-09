@@ -32,7 +32,7 @@ class DivinationService {
   /// 輸入三個數字 (大於0)
   /// number1: 下卦 (除以8取餘數)
   /// number2: 上卦 (除以8取餘數)
-  /// number3: 動爻 (除以6取餘數，1~6)
+  /// number3: 變爻 (除以6取餘數，1~6)
   /// 回傳：包含六個數字(6, 7, 8, 9)的 List
   List<int> generateNumberDivination(int num1, int num2, int num3) {
     // 依先天八卦數：乾1 兌2 離3 震4 巽5 坎6 艮7 坤8
@@ -45,15 +45,15 @@ class DivinationService {
     // --- 關鍵修正：依照使用者要求的餘數規則定變爻 ---
     // 餘1=初爻, 餘2=二爻, 餘3=三爻, 餘4=四爻, 餘5=五爻, 餘0(整除)=上爻
     int remainder = num3 % 6;
-    int movingYaoPosition; // 1 to 6
+    int changingYaoPosition; // 1 to 6
     if (remainder == 0) {
-      movingYaoPosition = 6; // 上爻
+      changingYaoPosition = 6; // 上爻
     } else {
-      movingYaoPosition = remainder;
+      changingYaoPosition = remainder;
     }
 
     // 轉換為 0-based index (0=初爻, 5=上爻)
-    int targetIndex = movingYaoPosition - 1;
+    int targetIndex = changingYaoPosition - 1;
 
     // 將八卦數轉換為三爻 (由下而上)
     List<int> lowerLines = _trigramNumberToBinaryLines(lowerTrigramNumber);
@@ -95,7 +95,7 @@ class DivinationService {
       case 5:
         return [0, 1, 1]; // 巽 ☴ (陰陽陽)
       case 6:
-        return [0, 1, 0]; // 坎 ☵ (陰陽陰)
+        return [0, 1, 0]; // 坎 ☵ (陰陰陰)
       case 7:
         return [0, 0, 1]; // 艮 ☶ (陰陰陽)
       case 8:
@@ -111,8 +111,8 @@ class DivinationService {
     return _linesToHexagramId(lines, isResulting: false);
   }
 
-  /// 根據 6, 7, 8, 9 算出變卦 (Resulting Hexagram) 的 ID
-  /// 若無動爻 (也就是沒有 6 且沒有 9)，回傳 null
+  /// 根據 6, 7, 8, 9 算出之卦 (Resulting Hexagram) 的 ID
+  /// 若無變爻 (也就是沒有 6 且沒有 9)，回傳 null
   int? calculateResultingHexagramId(List<int> lines) {
     if (!lines.contains(6) && !lines.contains(9)) {
       return null;

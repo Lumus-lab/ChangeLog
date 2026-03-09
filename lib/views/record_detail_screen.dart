@@ -3,10 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../models/divination_record.dart';
+import '../models/hexagram.dart';
 import '../providers/record_list_provider.dart';
 import '../providers/hexagram_provider.dart';
 import '../services/zhuxi_interpreter_service.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'widgets/hexagram_widget.dart';
+import 'hexagram_detail_screen.dart';
 
 class RecordDetailScreen extends ConsumerStatefulWidget {
   final DivinationRecord record;
@@ -59,20 +62,17 @@ class _RecordDetailScreenState extends ConsumerState<RecordDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final primary = Theme.of(context).colorScheme.primary;
-    final hexagramsAsync = ref.watch(hexagramsProvider);
-    final hexagrams = hexagramsAsync.value ?? [];
+    final hexRepository = ref.watch(hexagramRepositoryProvider);
 
-    // 取得卦名與建議
-    String primaryName = "未知本卦";
-    String resultingName = "無變卦";
+    // 取得本卦與之卦
+    Hexagram? primaryHex;
+    Hexagram? resultingHex;
     try {
-      primaryName = hexagrams
-          .firstWhere((h) => h.id == widget.record.primaryHexagramId)
-          .name;
+      primaryHex = hexRepository.getById(widget.record.primaryHexagramId);
       if (widget.record.resultingHexagramId != null) {
-        resultingName = hexagrams
-            .firstWhere((h) => h.id == widget.record.resultingHexagramId)
-            .name;
+        resultingHex = hexRepository.getById(
+          widget.record.resultingHexagramId!,
+        );
       }
     } catch (_) {}
 
@@ -157,16 +157,28 @@ class _RecordDetailScreenState extends ConsumerState<RecordDetailScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        _buildHexagramCircle(primaryName, '本卦', primary),
-                        Icon(
-                          Icons.arrow_forward_rounded,
-                          color: Colors.grey[600],
-                        ),
-                        _buildHexagramCircle(
-                          resultingName,
-                          '變卦',
-                          Colors.grey[300]!,
-                        ),
+                        if (primaryHex != null && rawLines != null)
+                          _buildHexagramColumn(
+                            context,
+                            '本卦',
+                            primaryHex,
+                            rawLines,
+                            false,
+                          ),
+                        if (resultingHex != null && rawLines != null) ...[
+                          Icon(
+                            Icons.arrow_forward_rounded,
+                            color: Colors.grey[600],
+                            size: 32,
+                          ),
+                          _buildHexagramColumn(
+                            context,
+                            '之卦',
+                            resultingHex,
+                            rawLines,
+                            true,
+                          ),
+                        ],
                       ],
                     ),
                     const SizedBox(height: 24),
@@ -321,39 +333,59 @@ class _RecordDetailScreenState extends ConsumerState<RecordDetailScreen> {
     );
   }
 
-  Widget _buildHexagramCircle(String name, String label, Color color) {
-    return Column(
-      children: [
-        Container(
-          width: 80,
-          height: 80,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: color.withValues(alpha: 0.1),
-            border: Border.all(color: color.withValues(alpha: 0.5), width: 2),
-            boxShadow: [
-              BoxShadow(color: color.withValues(alpha: 0.2), blurRadius: 15),
-            ],
+  Widget _buildHexagramColumn(
+    BuildContext context,
+    String title,
+    Hexagram hexagram,
+    List<int> originalLines,
+    bool isResulting,
+  ) {
+    List<int> drawnLines = isResulting
+        ? originalLines.map((l) => (l == 6 || l == 7) ? 7 : 8).toList()
+        : originalLines;
+
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => HexagramDetailScreen(hexagram: hexagram),
           ),
-          alignment: Alignment.center,
-          child: Text(
-            name,
+        );
+      },
+      child: Column(
+        children: [
+          Text(title, style: const TextStyle(fontSize: 18, color: Colors.grey)),
+          const SizedBox(height: 12),
+          Text(
+            hexagram.name,
             style: TextStyle(
               fontSize: 32,
               fontWeight: FontWeight.bold,
-              color: color,
+              color: Theme.of(context).colorScheme.primary,
             ),
           ),
-        ),
-        const SizedBox(height: 16),
-        Text(
-          label,
-          style: TextStyle(
-            color: Colors.grey[400],
-            fontWeight: FontWeight.w600,
+          const SizedBox(height: 16),
+          HexagramWidget(
+            lines: drawnLines,
+            lineWidth: 80,
+            lineHeight: 12,
+            spacing: 8,
+            yangColor: Colors.white,
+            yinColor: Colors.white,
+            changingColor: isResulting ? Colors.white : Colors.redAccent,
           ),
-        ),
-      ],
+          const SizedBox(height: 12),
+          const Text(
+            '點擊查看詳細',
+            style: TextStyle(
+              fontSize: 10,
+              color: Colors.grey,
+              decoration: TextDecoration.underline,
+            ),
+          ),
+        ],
+      ),
     );
   }
 

@@ -115,7 +115,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
             const SizedBox(height: 12),
             Text(
-              '輸入您專屬的 Google Gemini API Key。使用自己的 Key 將完全保障您的隱私，且永久免除廣告干擾。您的 Key 將被加密儲存在設備中，絕不上傳。',
+              '輸入您專屬的 Google Gemini API Key。使用自己的 Key 將完全保障您的隱私，AI 解卦時不再扣除額度。為了維持基本營運，部分轉場期間仍會保留插頁式廣告，敬請見諒。您的 Key 將被加密儲存在設備中，絕不上傳。',
               style: TextStyle(color: Colors.grey[400], height: 1.5),
             ),
             const SizedBox(height: 16),

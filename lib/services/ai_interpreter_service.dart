@@ -94,19 +94,18 @@ class AIInterpreterService {
     }
 
     if (changingIndices.isNotEmpty) {
-      promptBuffer.writeln('動爻資訊：');
+      promptBuffer.writeln('變爻資訊：');
       for (var idx in changingIndices) {
         if (idx >= 0 && idx < primaryHexagram.lines.length) {
-          promptBuffer.writeln(
-            '- ${_getYaoName(idx)}發動：${primaryHexagram.lines[idx]}',
-          );
+          final name = _getYaoName(idx, lines[idx]);
+          promptBuffer.writeln('- $name：${primaryHexagram.lines[idx]}');
         }
       }
     }
 
     if (resultingHexagram != null) {
       promptBuffer.writeln(
-        '變卦為：【${resultingHexagram.name}卦】（卦辭：${resultingHexagram.description}）',
+        '之卦為：【${resultingHexagram.name}卦】（卦辭：${resultingHexagram.description}）',
       );
     }
     promptBuffer.writeln('根據傳統朱熹解卦法則，目前的觀測重心為：「$guidance」');
@@ -114,7 +113,7 @@ class AIInterpreterService {
     promptBuffer.writeln('\n請遵循以下原則進行解析：');
     promptBuffer.writeln('1. **絕對不要給予直接的建議或下一步該怎麼做的指令。** 你的任務是解釋現狀的「動態性質」。');
     promptBuffer.writeln(
-      '2. **著重於分析「時 (Timing)」與「位 (Position, Status)」**。根據上述動爻的「位置」與「爻辭」內容，解析目前的情境是屬於積蓄力量、等待時機、還是該順勢而為？使用者的內在狀態與外在環境處於什麼樣的相對位置？',
+      '2. **著重於分析「時 (Timing)」與「位 (Position, Status)」**。根據上述變爻的「位置」與「爻辭」內容，解析目前的情境是屬於積蓄力量、等待時機、還是該順勢而為？使用者的內在狀態與外在環境處於什麼樣的相對位置？',
     );
     promptBuffer.writeln(
       '3. **啟發與發現**。用客觀、富有哲理且溫和的白話，解析卦象如何對映使用者的問題，最後提出一個「反思性的提問」，讓使用者自己決定下一步。',
@@ -165,20 +164,23 @@ class AIInterpreterService {
     }
   }
 
-  String _getYaoName(int index) {
+  String _getYaoName(int index, int value) {
+    final bool isYang = (value == 7 || value == 9);
+    final String type = isYang ? "九" : "六";
+
     switch (index) {
       case 0:
-        return "初爻";
+        return "初$type";
       case 1:
-        return "二爻";
+        return "${type}二";
       case 2:
-        return "三爻";
+        return "${type}三";
       case 3:
-        return "四爻";
+        return "${type}四";
       case 4:
-        return "五爻";
+        return "${type}五";
       case 5:
-        return "上爻";
+        return "上$type";
       default:
         return "";
     }
