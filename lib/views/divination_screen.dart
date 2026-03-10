@@ -36,6 +36,16 @@ class _DivinationScreenState extends ConsumerState<DivinationScreen> {
     });
   }
 
+  @override
+  void dispose() {
+    _questionController.dispose();
+    _num1Ctrl.dispose();
+    _num2Ctrl.dispose();
+    _num3Ctrl.dispose();
+    _yarrowCtrl.dispose();
+    super.dispose();
+  }
+
   void _resetForm() {
     setState(() {
       _questionController.clear();

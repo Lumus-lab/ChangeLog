@@ -1,6 +1,7 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../constants/ai_config.dart';
 
 final storageServiceProvider = Provider<StorageService>((ref) {
   throw UnimplementedError('storageServiceProvider must be overridden in main');
@@ -47,8 +48,8 @@ class StorageService {
 
     if (lastResetStr != todayStr) {
       final current = _prefs.getInt(_kAdCredits) ?? 0;
-      if (current < 3) {
-        _prefs.setInt(_kAdCredits, 3);
+      if (current < AIConfig.dailyFreeCredits) {
+        _prefs.setInt(_kAdCredits, AIConfig.dailyFreeCredits);
       }
       _prefs.setString(_kLastResetDate, todayStr);
     }

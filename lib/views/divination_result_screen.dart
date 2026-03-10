@@ -12,6 +12,7 @@ import 'home_screen.dart';
 import 'settings_screen.dart';
 import '../../services/ad_service.dart';
 import '../../services/storage_service.dart';
+import '../../constants/ai_config.dart';
 import '../../providers/database_provider.dart';
 import '../../providers/usage_provider.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
@@ -330,10 +331,8 @@ class _AIDialogContentState extends ConsumerState<_AIDialogContent> {
     setState(() => _isLoadingAd = true);
     AdService.showRewardedAd(
       onRewardEarned: (reward) async {
-        // 使用固定的 3 次獎勵，不再依賴廣告平台回傳值
-        const fixedReward = 3;
-
-        await ref.read(aiCreditsProvider.notifier).addCredits(fixedReward);
+        // 使用 AIConfig 定義的固定獎勵次數
+        await ref.read(aiCreditsProvider.notifier).addCredits(AIConfig.adRewardCredits);
         if (mounted) {
           setState(() {
             _isLoadingAd = false;
