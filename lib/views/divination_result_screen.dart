@@ -6,8 +6,7 @@ import '../../providers/hexagram_provider.dart';
 import '../../providers/record_list_provider.dart';
 import '../../providers/divination_provider.dart';
 import '../../services/zhuxi_interpreter_service.dart';
-import 'widgets/hexagram_widget.dart';
-import 'hexagram_detail_screen.dart';
+import 'widgets/hexagram_column.dart';
 import 'home_screen.dart';
 import 'settings_screen.dart';
 import '../../services/ad_service.dart';
@@ -113,12 +112,10 @@ class DivinationResultScreen extends ConsumerWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
                     if (primaryHex != null)
-                      _buildHexagramColumn(
-                        context,
-                        "本卦",
-                        primaryHex,
-                        lines,
-                        false,
+                      HexagramColumn(
+                        title: '本卦',
+                        hexagram: primaryHex,
+                        originalLines: lines,
                       ),
 
                     if (hasChangingLines)
@@ -129,12 +126,11 @@ class DivinationResultScreen extends ConsumerWidget {
                       ),
 
                     if (resultingHex != null)
-                      _buildHexagramColumn(
-                        context,
-                        "之卦",
-                        resultingHex,
-                        lines,
-                        true,
+                      HexagramColumn(
+                        title: '之卦',
+                        hexagram: resultingHex,
+                        originalLines: lines,
+                        isResulting: true,
                       ),
                   ],
                 ),
@@ -273,63 +269,6 @@ class DivinationResultScreen extends ConsumerWidget {
           lines: lines,
         );
       },
-    );
-  }
-
-  Widget _buildHexagramColumn(
-    BuildContext context,
-    String title,
-    Hexagram hexagram,
-    List<int> originalLines,
-    bool isResulting,
-  ) {
-    // 繪製 HexagramWidget 時，若是變卦，需要把 6, 9 轉成 7, 8 以確保只畫出靜態陰陽
-    List<int> drawnLines = isResulting
-        ? originalLines.map((l) => (l == 6 || l == 7) ? 7 : 8).toList()
-        : originalLines;
-
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => HexagramDetailScreen(hexagram: hexagram),
-          ),
-        );
-      },
-      child: Column(
-        children: [
-          Text(title, style: const TextStyle(fontSize: 18, color: Colors.grey)),
-          const SizedBox(height: 12),
-          Text(
-            hexagram.name,
-            style: TextStyle(
-              fontSize: 32,
-              fontWeight: FontWeight.bold,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-          ),
-          const SizedBox(height: 24),
-          HexagramWidget(
-            lines: drawnLines,
-            lineWidth: 80,
-            lineHeight: 12,
-            spacing: 8,
-            yangColor: Colors.white,
-            yinColor: Colors.white,
-            changingColor: isResulting ? Colors.white : Colors.redAccent,
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            '點擊查看詳細',
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey,
-              decoration: TextDecoration.underline,
-            ),
-          ),
-        ],
-      ),
     );
   }
 

@@ -8,8 +8,7 @@ import '../providers/record_list_provider.dart';
 import '../providers/hexagram_provider.dart';
 import '../services/zhuxi_interpreter_service.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
-import 'widgets/hexagram_widget.dart';
-import 'hexagram_detail_screen.dart';
+import 'widgets/hexagram_column.dart';
 
 class RecordDetailScreen extends ConsumerStatefulWidget {
   final DivinationRecord record;
@@ -158,12 +157,10 @@ class _RecordDetailScreenState extends ConsumerState<RecordDetailScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
                         if (primaryHex != null && rawLines != null)
-                          _buildHexagramColumn(
-                            context,
-                            '本卦',
-                            primaryHex,
-                            rawLines,
-                            false,
+                          HexagramColumn(
+                            title: '本卦',
+                            hexagram: primaryHex,
+                            originalLines: rawLines,
                           ),
                         if (resultingHex != null && rawLines != null) ...[
                           Icon(
@@ -171,12 +168,11 @@ class _RecordDetailScreenState extends ConsumerState<RecordDetailScreen> {
                             color: Colors.grey[600],
                             size: 32,
                           ),
-                          _buildHexagramColumn(
-                            context,
-                            '之卦',
-                            resultingHex,
-                            rawLines,
-                            true,
+                          HexagramColumn(
+                            title: '之卦',
+                            hexagram: resultingHex,
+                            originalLines: rawLines,
+                            isResulting: true,
                           ),
                         ],
                       ],
@@ -329,62 +325,6 @@ class _RecordDetailScreenState extends ConsumerState<RecordDetailScreen> {
             const SizedBox(height: 40),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildHexagramColumn(
-    BuildContext context,
-    String title,
-    Hexagram hexagram,
-    List<int> originalLines,
-    bool isResulting,
-  ) {
-    List<int> drawnLines = isResulting
-        ? originalLines.map((l) => (l == 6 || l == 7) ? 7 : 8).toList()
-        : originalLines;
-
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => HexagramDetailScreen(hexagram: hexagram),
-          ),
-        );
-      },
-      child: Column(
-        children: [
-          Text(title, style: const TextStyle(fontSize: 18, color: Colors.grey)),
-          const SizedBox(height: 12),
-          Text(
-            hexagram.name,
-            style: TextStyle(
-              fontSize: 32,
-              fontWeight: FontWeight.bold,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-          ),
-          const SizedBox(height: 16),
-          HexagramWidget(
-            lines: drawnLines,
-            lineWidth: 80,
-            lineHeight: 12,
-            spacing: 8,
-            yangColor: Colors.white,
-            yinColor: Colors.white,
-            changingColor: isResulting ? Colors.white : Colors.redAccent,
-          ),
-          const SizedBox(height: 12),
-          const Text(
-            '點擊查看詳細',
-            style: TextStyle(
-              fontSize: 10,
-              color: Colors.grey,
-              decoration: TextDecoration.underline,
-            ),
-          ),
-        ],
       ),
     );
   }
