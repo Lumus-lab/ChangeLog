@@ -46,7 +46,7 @@
 
 ## 聯絡方式
 
-如有任何隱私相關問題，請聯繫：**contact@lumusxlab.com**
+如有任何隱私相關問題，請聯繫：**changelog@lumusxlab.com**
 
 ## 總結
 
