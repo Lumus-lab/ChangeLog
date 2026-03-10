@@ -1,3 +1,5 @@
+import '../utils/yao_utils.dart';
+
 class ZhuxiInterpreterService {
   /// 根據朱熹《易學啟蒙》規則，回傳應該優先閱讀的文本建議。
   /// [lines] 是由下而上的六個爻 (包含 6, 7, 8, 9)
@@ -19,14 +21,14 @@ class ZhuxiInterpreterService {
       case 0:
         return "六爻皆靜 (無變爻)：請以【本卦卦辭】來判斷吉凶。";
       case 1:
-        final name = _getYaoName(changingIndices[0], lines[changingIndices[0]]);
+        final name = getYaoName(changingIndices[0], lines[changingIndices[0]]);
         return "一爻變 ($name)：請以【本卦 $name】的爻辭來判斷吉凶。";
       case 2:
-        final lower = _getYaoName(
+        final lower = getYaoName(
           changingIndices[0],
           lines[changingIndices[0]],
         );
-        final upper = _getYaoName(
+        final upper = getYaoName(
           changingIndices[1],
           lines[changingIndices[1]],
         );
@@ -35,11 +37,11 @@ class ZhuxiInterpreterService {
         return "三爻變：請綜合參考【本卦卦辭】與【之卦卦辭】，且以【本卦卦辭】為主。";
       case 4:
         // 取兩個靜爻
-        final lower = _getYaoName(staticIndices[0], lines[staticIndices[0]]);
-        final upper = _getYaoName(staticIndices[1], lines[staticIndices[1]]);
+        final lower = getYaoName(staticIndices[0], lines[staticIndices[0]]);
+        final upper = getYaoName(staticIndices[1], lines[staticIndices[1]]);
         return "四爻變：請以【之卦的兩個靜爻】($lower, $upper) 的爻辭來判斷，且主要以位置較低的【$lower】為主。";
       case 5:
-        final name = _getYaoName(staticIndices[0], lines[staticIndices[0]]);
+        final name = getYaoName(staticIndices[0], lines[staticIndices[0]]);
         return "五爻變：請以【之卦的唯一靜爻 ($name)】之爻辭來判斷。";
       case 6:
         // 特例：乾卦與坤卦
@@ -54,28 +56,6 @@ class ZhuxiInterpreterService {
         }
       default:
         return "未知的爻變情形。";
-    }
-  }
-
-  String _getYaoName(int index, int value) {
-    final bool isYang = (value == 7 || value == 9);
-    final String type = isYang ? "九" : "六";
-
-    switch (index) {
-      case 0:
-        return "初$type";
-      case 1:
-        return "$type二";
-      case 2:
-        return "$type三";
-      case 3:
-        return "$type四";
-      case 4:
-        return "$type五";
-      case 5:
-        return "上$type";
-      default:
-        return "";
     }
   }
 }

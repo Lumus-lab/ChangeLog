@@ -5,6 +5,7 @@ import 'package:google_generative_ai/google_generative_ai.dart';
 import '../models/hexagram.dart';
 import '../services/storage_service.dart';
 import '../constants/ai_config.dart';
+import '../utils/yao_utils.dart';
 
 class NoAdCreditsException implements Exception {
   final String message;
@@ -94,7 +95,7 @@ class AIInterpreterService {
       promptBuffer.writeln('變爻資訊：');
       for (var idx in changingIndices) {
         if (idx >= 0 && idx < primaryHexagram.lines.length) {
-          final name = _getYaoName(idx, lines[idx]);
+          final name = getYaoName(idx, lines[idx]);
           promptBuffer.writeln('- $name：${primaryHexagram.lines[idx]}');
         }
       }
@@ -191,28 +192,6 @@ class AIInterpreterService {
       throw Exception('無效的回傳格式');
     } else {
       throw Exception('HTTP Status ${response.statusCode}: ${response.body}');
-    }
-  }
-
-  String _getYaoName(int index, int value) {
-    final bool isYang = (value == 7 || value == 9);
-    final String type = isYang ? "九" : "六";
-
-    switch (index) {
-      case 0:
-        return "初$type";
-      case 1:
-        return "$type二";
-      case 2:
-        return "$type三";
-      case 3:
-        return "$type四";
-      case 4:
-        return "$type五";
-      case 5:
-        return "上$type";
-      default:
-        return "";
     }
   }
 }
