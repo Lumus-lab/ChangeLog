@@ -95,7 +95,7 @@ class DivinationService {
       case 5:
         return [0, 1, 1]; // 巽 ☴ (陰陽陽)
       case 6:
-        return [0, 1, 0]; // 坎 ☵ (陰陰陰)
+        return [0, 1, 0]; // 坎 ☵ (陰陽陰)
       case 7:
         return [0, 0, 1]; // 艮 ☶ (陰陰陽)
       case 8:

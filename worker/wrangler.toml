@@ -10,7 +10,7 @@ id = "9fba65ed9cc648f094031de487ab65cc"
 
 [vars]
 # EXPECTED_APP_ID is used for a basic CORS/App validation check.
-EXPECTED_APP_ID = "com.lumuslab.changelog" 
+EXPECTED_APP_ID = "com.lumusxlab.changelog"
 
 # Note: Do not put GEMINI_API_KEY here. 
 # Run `wrangler secret put GEMINI_API_KEY` to securely add it.

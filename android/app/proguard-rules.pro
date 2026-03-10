@@ -12,7 +12,7 @@
 -keep class * extends io.objectbox.relation.ToMany
 
 # Keep your model classes
--keep class com.lumus.changelog.models.** { *; }
+-keep class com.lumusxlab.changelog.models.** { *; }
 
 # Flutter and standard rules
 -keep class io.flutter.app.** { *; }

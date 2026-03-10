@@ -4,6 +4,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import '../models/hexagram.dart';
 import '../services/storage_service.dart';
+import '../constants/ai_config.dart';
 
 class NoAdCreditsException implements Exception {
   final String message;
@@ -15,11 +16,9 @@ class NoAdCreditsException implements Exception {
 class AIInterpreterService {
   final StorageService _storage;
 
-  // You would configure your actual Cloudflare Worker URL in .env or as a constant
-  final String _workerUrl =
-      dotenv.env['WORKER_URL'] ??
-      'https://iching-gemini-proxy.your-subdomain.workers.dev';
-  final String _appId = 'com.lumuslab.changelog';
+  final String _workerUrl = dotenv.env['WORKER_URL'] ??
+      (throw StateError('WORKER_URL 未在 .env 中設定，請確認 .env 檔案包含 WORKER_URL。'));
+  final String _appId = 'com.lumusxlab.changelog';
 
   AIInterpreterService(this._storage);
 
@@ -66,16 +65,14 @@ class AIInterpreterService {
     }
   }
 
-  Future<String> _interpretDirectly({
-    required String apiKey,
+  /// 組裝統一的 AI prompt（BYOK 與 Worker 共用）
+  String _buildPrompt({
     required String question,
     required Hexagram primaryHexagram,
     Hexagram? resultingHexagram,
     required String guidance,
     required List<int> lines,
-  }) async {
-    final model = GenerativeModel(model: 'gemini-1.5-flash', apiKey: apiKey);
-
+  }) {
     final promptBuffer = StringBuffer();
     promptBuffer.writeln(
       '你是一位深研《易經》哲學的引導者。你的目標不是「算命」或「給予指令」，而是透過卦象中蘊含的「時」與「位」的智慧，引發使用者深度思考，從而發現自己的路。',
@@ -118,10 +115,39 @@ class AIInterpreterService {
     promptBuffer.writeln(
       '3. **啟發與發現**。用客觀、富有哲理且溫和的白話，解析卦象如何對映使用者的問題，最後提出一個「反思性的提問」，讓使用者自己決定下一步。',
     );
-    promptBuffer.writeln('4. **篇幅限制**。解析字數請控制在 350 字以內，格式簡潔易讀。');
+    promptBuffer.writeln('4. **格式規範**：');
+    promptBuffer.writeln('   - 不要自我介紹。');
+    promptBuffer.writeln('   - 開場請用：「針對您求問的『$question』，目前的卦象呈現為『${primaryHexagram.name}』...」');
+    promptBuffer.writeln('   - 使用標準 Markdown 格式（**粗體**、### 標題）。');
+    promptBuffer.writeln('   - 最後必須提出一個「反思性提問」，讓使用者自己決定下一步。');
+    promptBuffer.writeln('5. **篇幅限制**。解析字數請控制在 350 字以內，格式簡潔易讀。');
+
+    return promptBuffer.toString();
+  }
+
+  Future<String> _interpretDirectly({
+    required String apiKey,
+    required String question,
+    required Hexagram primaryHexagram,
+    Hexagram? resultingHexagram,
+    required String guidance,
+    required List<int> lines,
+  }) async {
+    final model = GenerativeModel(
+      model: AIConfig.geminiModel,
+      apiKey: apiKey,
+    );
+
+    final prompt = _buildPrompt(
+      question: question,
+      primaryHexagram: primaryHexagram,
+      resultingHexagram: resultingHexagram,
+      guidance: guidance,
+      lines: lines,
+    );
 
     try {
-      final content = [Content.text(promptBuffer.toString())];
+      final content = [Content.text(prompt)];
       final response = await model.generateContent(content);
       return response.text ?? '無法產生解析，請稍後再試。';
     } catch (e) {
@@ -136,19 +162,23 @@ class AIInterpreterService {
     required String guidance,
     required List<int> lines,
   }) async {
-    // Call Cloudflare Worker
+    final prompt = _buildPrompt(
+      question: question,
+      primaryHexagram: primaryHexagram,
+      resultingHexagram: resultingHexagram,
+      guidance: guidance,
+      lines: lines,
+    );
+
+    // Call Cloudflare Worker — 直接傳完整 prompt，Worker 只負責轉發
     final response = await http.post(
       Uri.parse(_workerUrl),
       headers: {
         'Content-Type': 'application/json',
-        'app-id': _appId, // For basic Worker verification
+        'app-id': _appId,
       },
       body: jsonEncode({
-        'question': question,
-        'primaryHex': primaryHexagram.name,
-        'resultingHex': resultingHexagram?.name,
-        'guidance': guidance,
-        'lines': lines, // Pass raw lines for worker-side processing if needed
+        'prompt': prompt,
         'adToken': 'placeholder-token',
       }),
     );

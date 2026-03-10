@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../services/storage_service.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -19,6 +20,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   void initState() {
     super.initState();
     _loadSettings();
+  }
+
+  @override
+  void dispose() {
+    _apiKeyController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadSettings() async {
@@ -115,7 +122,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
             const SizedBox(height: 12),
             Text(
-              '輸入您專屬的 Google Gemini API Key。使用自己的 Key 將完全保障您的隱私，AI 解卦時不再扣除額度。為了維持基本營運，部分轉場期間仍會保留插頁式廣告，敬請見諒。您的 Key 將被加密儲存在設備中，絕不上傳。',
+              '輸入您專屬的 Google Gemini API Key。使用自己的 Key 時，AI 提問將直接從您的裝置連線至 Google，不經過我們的伺服器，AI 解卦時不再扣除額度。為了維持基本營運，部分轉場期間仍會保留插頁式廣告（廣告 SDK 仍可能收集部分裝置資訊），敬請見諒。您的 Key 將被加密儲存在設備中，絕不上傳。',
               style: TextStyle(color: Colors.grey[400], height: 1.5),
             ),
             const SizedBox(height: 16),
@@ -142,6 +149,22 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               child: _isSaving
                   ? const CircularProgressIndicator()
                   : const Text('安全儲存 API Key'),
+            ),
+
+            const SizedBox(height: 48),
+
+            // PRIVACY POLICY SECTION
+            OutlinedButton.icon(
+              onPressed: () async {
+                final url = Uri.parse(
+                  'https://lumus-lab.github.io/ChangeLog/privacy-policy.html',
+                );
+                if (await canLaunchUrl(url)) {
+                  await launchUrl(url, mode: LaunchMode.externalApplication);
+                }
+              },
+              icon: const Icon(Icons.privacy_tip_outlined),
+              label: const Text('隱私政策'),
             ),
           ],
         ),

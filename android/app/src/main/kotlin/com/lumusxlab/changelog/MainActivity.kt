@@ -1,4 +1,4 @@
-package com.lumus.changelog
+package com.lumusxlab.changelog
 
 import io.flutter.embedding.android.FlutterActivity
 

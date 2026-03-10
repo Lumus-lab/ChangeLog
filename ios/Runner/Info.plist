@@ -53,6 +53,8 @@
 	</array>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+	<key>NSUserTrackingUsageDescription</key>
+	<string>此應用程式使用廣告追蹤以提供個人化廣告體驗。您可以選擇不允許追蹤，將會看到非個人化的廣告。</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 </dict>

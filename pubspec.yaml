@@ -1,5 +1,5 @@
 name: changelog
-description: "A new Flutter project."
+description: "易占：ChangeLog — 結合易經占卜、記錄與學習的應用程式"
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -55,6 +55,7 @@ dependencies:
   flutter_markdown: ^0.7.5+1
   google_fonts: ^6.2.1
   flutter_svg: ^2.0.10+17
+  url_launcher: ^6.2.5
 
 dev_dependencies:
   flutter_test:
