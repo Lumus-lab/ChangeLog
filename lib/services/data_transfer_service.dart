@@ -26,6 +26,7 @@ class DataTransferService {
             'resultingHexagramId': r.resultingHexagramId,
             'changingLinesStr': r.changingLinesStr,
             'interpretation': r.interpretation,
+            'aiInterpretation': r.aiInterpretation,
             'actionTaken': r.actionTaken,
             'actualOutcome': r.actualOutcome,
             'isResolved': r.isResolved,
@@ -89,6 +90,7 @@ class DataTransferService {
             actualOutcome: item['actualOutcome'],
             isResolved: item['isResolved'] ?? false,
           );
+          record.aiInterpretation = item['aiInterpretation'];
 
           notifier.addRecord(record);
           importedCount++;

@@ -615,7 +615,7 @@ class _AIDialogContentState extends ConsumerState<_AIDialogContent> {
                           );
                           // 只要離開結果對話框，就嘗試顯示插頁廣告
                           Navigator.of(context).pop();
-                          AdService.showInterstitialAd();
+                          AdService.showInterstitialAdWithCooldown();
                         }
                       }
                     }
@@ -632,7 +632,7 @@ class _AIDialogContentState extends ConsumerState<_AIDialogContent> {
               if (mounted) {
                 Navigator.of(context).pop();
                 // 每次手動關閉也顯示插頁廣告
-                AdService.showInterstitialAd();
+                AdService.showInterstitialAdWithCooldown();
               }
             },
             child: const Text('了解 / 關閉'),

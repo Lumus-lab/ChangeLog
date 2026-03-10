@@ -3,10 +3,14 @@ import 'package:flutter/foundation.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 class AdService {
+  // --- Interstitial Cooldown (10 minutes) ---
+  static DateTime? _lastInterstitialShownAt;
+  static const _interstitialCooldown = Duration(minutes: 10);
+
   // --- Rewarded Ad IDs ---
   static String get rewardedAdUnitId {
     if (kReleaseMode) {
-      // TODO: Replace with your actual production Ad Unit ID
+      // TODO: Replace with your actual production Ad Unit ID before release
       return Platform.isAndroid
           ? 'ca-app-pub-3940256099942544/5224354917'
           : 'ca-app-pub-3940256099942544/1712485313';
@@ -20,7 +24,7 @@ class AdService {
   // --- Interstitial Ad IDs ---
   static String get interstitialAdUnitId {
     if (kReleaseMode) {
-      // TODO: Replace with your actual production Ad Unit ID
+      // TODO: Replace with your actual production Ad Unit ID before release
       return Platform.isAndroid
           ? 'ca-app-pub-3940256099942544/1033173712'
           : 'ca-app-pub-3940256099942544/4411468910';
@@ -63,13 +67,23 @@ class AdService {
     );
   }
 
-  /// 加載並顯示插頁廣告
-  static void showInterstitialAd({Function()? onAdClosed}) {
+  /// 加載並顯示插頁廣告（帶 10 分鐘冷卻時間）
+  /// 如果距離上次顯示未滿冷卻時間，則靜默跳過
+  static void showInterstitialAdWithCooldown({Function()? onAdClosed}) {
+    final now = DateTime.now();
+    if (_lastInterstitialShownAt != null &&
+        now.difference(_lastInterstitialShownAt!) < _interstitialCooldown) {
+      // 冷卻中，不顯示
+      if (onAdClosed != null) onAdClosed();
+      return;
+    }
+
     InterstitialAd.load(
       adUnitId: interstitialAdUnitId,
       request: const AdRequest(),
       adLoadCallback: InterstitialAdLoadCallback(
         onAdLoaded: (ad) {
+          _lastInterstitialShownAt = DateTime.now();
           ad.fullScreenContentCallback = FullScreenContentCallback(
             onAdDismissedFullScreenContent: (ad) {
               ad.dispose();

@@ -65,13 +65,13 @@ class ZhuxiInterpreterService {
       case 0:
         return "初$type";
       case 1:
-        return "${type}二";
+        return "$type二";
       case 2:
-        return "${type}三";
+        return "$type三";
       case 3:
-        return "${type}四";
+        return "$type四";
       case 4:
-        return "${type}五";
+        return "$type五";
       case 5:
         return "上$type";
       default:
