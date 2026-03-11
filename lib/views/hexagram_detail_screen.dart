@@ -132,68 +132,31 @@ class HexagramDetailScreen extends StatelessWidget {
             ).animate().fadeIn(delay: 300.ms),
             const SizedBox(height: 16),
             ...List.generate(hexagram.lines.length, (index) {
-              return Card(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    shape: RoundedRectangleBorder(
-                      side: BorderSide(color: primary.withValues(alpha: 0.2)),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: primary.withValues(alpha: 0.2),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              _getLineName(index),
-                              style: TextStyle(
-                                color: primary,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  hexagram.lines[index],
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    height: 1.5,
-                                  ),
-                                ),
-                                if (hexagram.smallImages != null &&
-                                    index < hexagram.smallImages!.length) ...[
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    '象曰：${hexagram.smallImages![index]}',
-                                    style: TextStyle(
-                                      color: Colors.grey[400],
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  )
+              return _buildLineCard(
+                context,
+                primary,
+                _getLineName(index),
+                hexagram.lines[index],
+                (hexagram.smallImages != null &&
+                        index < hexagram.smallImages!.length)
+                    ? hexagram.smallImages![index]
+                    : null,
+              )
                   .animate()
                   .fadeIn(delay: (400 + (50 * index)).ms)
                   .slideY(begin: 0.1, end: 0);
             }),
+            if (hexagram.useLine != null) ...[
+              const SizedBox(height: 12),
+              _buildLineCard(
+                context,
+                primary,
+                hexagram.id == 1 ? '用九' : '用六',
+                hexagram.useLine!,
+                hexagram.useLineSmallImage,
+                isSpecial: true,
+              ).animate().fadeIn(delay: 700.ms).slideY(begin: 0.1, end: 0),
+            ],
             if (hexagram.wenYan != null) ...[
               const SizedBox(height: 32),
               _buildSection(
@@ -242,10 +205,84 @@ class HexagramDetailScreen extends StatelessWidget {
     );
   }
 
+  Widget _buildLineCard(
+    BuildContext context,
+    Color primary,
+    String label,
+    String content,
+    String? smallImage, {
+    bool isSpecial = false,
+  }) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      shape: RoundedRectangleBorder(
+        side: BorderSide(
+          color: isSpecial
+              ? Colors.amber.withValues(alpha: 0.5)
+              : primary.withValues(alpha: 0.2),
+          width: isSpecial ? 2 : 1,
+        ),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 6,
+              ),
+              decoration: BoxDecoration(
+                color: isSpecial
+                    ? Colors.amber.withValues(alpha: 0.2)
+                    : primary.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                label,
+                style: TextStyle(
+                  color: isSpecial ? Colors.amber[700] : primary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    content,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      height: 1.5,
+                    ),
+                  ),
+                  if (smallImage != null) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      '象曰：$smallImage',
+                      style: TextStyle(
+                        color: Colors.grey[400],
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   String _getLineName(int index) {
     const names = ['初', '二', '三', '四', '五', '上'];
     if (index >= 0 && index < names.length) {
-      return '${names[index]}爻'; // 這裡先簡化，待結合陰陽屬性後可變初九/初六
+      return '${names[index]}爻';
     }
     return '未知爻';
   }

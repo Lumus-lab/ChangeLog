@@ -305,7 +305,7 @@ class _DivinationScreenState extends ConsumerState<DivinationScreen> {
                 ),
                 const SizedBox(height: 12),
                 _buildRuleItem('不誠不占：', '心意不誠者不占'),
-                _buildRuleItem('不義不占：', '不義之飾、違法之事不占'),
+                _buildRuleItem('不義不占：', '不義之事、違法之事不占'),
                 _buildRuleItem('不疑不占：', '無所疑惑、僅供戲玩不占'),
                 const Divider(height: 24),
                 _buildRuleItem('易經誡示：', '「初筮告，再三瀆，瀆則不告」— 同一事不可連占。'),

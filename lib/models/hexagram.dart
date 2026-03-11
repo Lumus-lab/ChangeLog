@@ -5,6 +5,8 @@ class Hexagram {
   final List<String> lines; // 六爻的爻辭 (初九, 九二...)
   final String? greatImage; // 大象
   final List<String>? smallImages; // 小象 (對應六爻)
+  final String? useLine; // 特殊爻辭 (用九, 用六)
+  final String? useLineSmallImage; // 特殊爻辭的小象傳
   final String? tuan; // 彖傳
   final String? wenYan; // 文言傳
 
@@ -15,6 +17,8 @@ class Hexagram {
     required this.lines,
     this.greatImage,
     this.smallImages,
+    this.useLine,
+    this.useLineSmallImage,
     this.tuan,
     this.wenYan,
   });
@@ -29,6 +33,8 @@ class Hexagram {
       smallImages: json['smallImages'] != null
           ? List<String>.from(json['smallImages'])
           : null,
+      useLine: json['useLine'] as String?,
+      useLineSmallImage: json['useLineSmallImage'] as String?,
       tuan: json['tuan'] as String?,
       wenYan: json['wenYan'] as String?,
     );

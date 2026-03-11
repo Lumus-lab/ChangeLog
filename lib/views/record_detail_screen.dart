@@ -193,7 +193,7 @@ class _RecordDetailScreenState extends ConsumerState<RecordDetailScreen> {
                               Icon(Icons.explore, color: primary, size: 20),
                               const SizedBox(width: 8),
                               const Text(
-                                '閱讀建議 (朱熹起蒙法則)',
+                                '閱讀建議 (朱熹解卦法則)',
                                 style: TextStyle(fontWeight: FontWeight.bold),
                               ),
                             ],
