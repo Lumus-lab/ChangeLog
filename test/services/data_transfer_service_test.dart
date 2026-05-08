@@ -14,6 +14,7 @@ void main() {
         primaryHexagramId: 1,
         resultingHexagramId: 44,
         changingLinesStr: jsonEncode([0, 4]),
+        methodDetailJson: '{"type":"yarrow","version":1,"lines":[]}',
         interpretation: '使用者自己的解讀',
         actionTaken: '繼續開發',
         actualOutcome: '順利上架',
@@ -33,6 +34,7 @@ void main() {
         'primaryHexagramId': r.primaryHexagramId,
         'resultingHexagramId': r.resultingHexagramId,
         'changingLinesStr': r.changingLinesStr,
+        'methodDetailJson': r.methodDetailJson,
         'interpretation': r.interpretation,
         'aiInterpretation': r.aiInterpretation,
         'actionTaken': r.actionTaken,
@@ -50,6 +52,7 @@ void main() {
         primaryHexagramId: item['primaryHexagramId'] ?? 1,
         resultingHexagramId: item['resultingHexagramId'],
         changingLinesStr: item['changingLinesStr'],
+        methodDetailJson: item['methodDetailJson'],
         interpretation: item['interpretation'],
         actionTaken: item['actionTaken'],
         actualOutcome: item['actualOutcome'],
@@ -90,6 +93,7 @@ void main() {
       expect(restored.isResolved, original.isResolved);
       expect(restored.rawHexagramNumbersStr, original.rawHexagramNumbersStr);
       expect(restored.changingLinesStr, original.changingLinesStr);
+      expect(restored.methodDetailJson, original.methodDetailJson);
     });
 
     test('import handles missing aiInterpretation gracefully', () {

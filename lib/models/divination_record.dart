@@ -28,6 +28,9 @@ class DivinationRecord {
   /// 變爻位置 (例如: "[2, 5]" 代表第二爻和第五爻變)
   String? changingLinesStr;
 
+  /// 起卦方式的結構化明細，例如籌策十八變。六爻結果仍以 rawHexagramNumbersStr 為唯一來源。
+  String? methodDetailJson;
+
   /// 自己如何解卦 (解讀與心得)
   String? interpretation;
 
@@ -52,6 +55,7 @@ class DivinationRecord {
     required this.primaryHexagramId,
     this.resultingHexagramId,
     this.changingLinesStr,
+    this.methodDetailJson,
     this.interpretation,
     this.actionTaken,
     this.actualOutcome,

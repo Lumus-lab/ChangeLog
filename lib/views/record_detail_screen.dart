@@ -8,7 +8,9 @@ import '../providers/record_list_provider.dart';
 import '../providers/hexagram_provider.dart';
 import '../services/zhuxi_interpreter_service.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'widgets/ai_markdown_style.dart';
 import 'widgets/hexagram_column.dart';
+import 'widgets/yarrow_detail_section.dart';
 
 class RecordDetailScreen extends ConsumerStatefulWidget {
   final DivinationRecord record;
@@ -85,6 +87,40 @@ class _RecordDetailScreenState extends ConsumerState<RecordDetailScreen> {
       appBar: AppBar(
         title: const Text('解卦日誌'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.delete_outline, color: Colors.grey),
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('刪除紀錄？'),
+                  content: const Text('確定要永久刪除這筆占卜紀錄嗎？此動作無法復原。'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('取消'),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        ref
+                            .read(recordsProvider.notifier)
+                            .deleteRecord(widget.record.id);
+                        Navigator.pop(context); // 關對話框
+                        Navigator.pop(context); // 退回列表頁
+                        ScaffoldMessenger.of(
+                          context,
+                        ).showSnackBar(const SnackBar(content: Text('紀錄已刪除')));
+                      },
+                      child: const Text(
+                        '確認刪除',
+                        style: TextStyle(color: Colors.red),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.save),
             onPressed: () {
@@ -210,6 +246,14 @@ class _RecordDetailScreenState extends ConsumerState<RecordDetailScreen> {
 
             const SizedBox(height: 32),
 
+            if (widget.record.method == '籌策') ...[
+              YarrowDetailSection(
+                methodDetailJson: widget.record.methodDetailJson,
+                rawLines: rawLines,
+              ),
+              const SizedBox(height: 32),
+            ],
+
             // AI 解卦區塊 (如果有存的話)
             if (widget.record.aiInterpretation != null &&
                 widget.record.aiInterpretation!.isNotEmpty) ...[
@@ -235,9 +279,7 @@ class _RecordDetailScreenState extends ConsumerState<RecordDetailScreen> {
                 ),
                 child: MarkdownBody(
                   data: widget.record.aiInterpretation!,
-                  styleSheet: MarkdownStyleSheet.fromTheme(
-                    Theme.of(context),
-                  ).copyWith(p: const TextStyle(fontSize: 16, height: 1.6)),
+                  styleSheet: buildAIMarkdownStyle(context),
                 ),
               ).animate().fadeIn(delay: 280.ms),
               const SizedBox(height: 32),
@@ -249,7 +291,7 @@ class _RecordDetailScreenState extends ConsumerState<RecordDetailScreen> {
                 Icon(Icons.edit_note, color: primary),
                 const SizedBox(width: 8),
                 const Text(
-                  '解卦心得',
+                  '自己如何解卦',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
               ],
@@ -258,7 +300,10 @@ class _RecordDetailScreenState extends ConsumerState<RecordDetailScreen> {
             TextField(
               controller: _interpretationCtrl,
               maxLines: 4,
-              decoration: _inputDecoration('輸入您的解讀...'),
+              decoration: _inputDecoration(
+                '輸入您的解讀...',
+                helperText: '記下你現在的理解，不必一次寫完整。',
+              ),
             ).animate().fadeIn(delay: 400.ms),
 
             const SizedBox(height: 24),
@@ -276,7 +321,10 @@ class _RecordDetailScreenState extends ConsumerState<RecordDetailScreen> {
             TextField(
               controller: _actionCtrl,
               maxLines: 3,
-              decoration: _inputDecoration('根據卦象，接下來打算如何行動？'),
+              decoration: _inputDecoration(
+                '根據卦象，接下來打算如何行動？',
+                helperText: '把卦象帶來的提醒轉成可觀察的行動。',
+              ),
             ).animate().fadeIn(delay: 600.ms),
 
             const SizedBox(height: 48),
@@ -316,7 +364,10 @@ class _RecordDetailScreenState extends ConsumerState<RecordDetailScreen> {
                   TextField(
                     controller: _outcomeCtrl,
                     maxLines: 3,
-                    decoration: _inputDecoration('這件事後來實際上是如何發展的？'),
+                    decoration: _inputDecoration(
+                      '這件事後來實際上是如何發展的？',
+                      helperText: '過一段時間回來記錄實際發展。',
+                    ),
                   ),
                 ],
               ),
@@ -329,9 +380,11 @@ class _RecordDetailScreenState extends ConsumerState<RecordDetailScreen> {
     );
   }
 
-  InputDecoration _inputDecoration(String hint) {
+  InputDecoration _inputDecoration(String hint, {String? helperText}) {
     return InputDecoration(
       hintText: hint,
+      helperText: helperText,
+      helperMaxLines: 2,
       filled: true,
       fillColor: Theme.of(context).colorScheme.surface,
       border: OutlineInputBorder(

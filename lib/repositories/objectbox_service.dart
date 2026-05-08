@@ -11,10 +11,14 @@ class ObjectBoxService {
 
   /// Create an instance of ObjectBox to use throughout the app.
   static Future<ObjectBoxService> create() async {
-    final docsDir = await getApplicationDocumentsDirectory();
-    final storeDir = p.join(docsDir.path, "obx_changelog");
-    Directory(storeDir).createSync(recursive: true);
-    final store = await openStore(directory: storeDir);
+    final supportDir = await getApplicationSupportDirectory();
+    final storeDir = storeDirectoryFor(supportDir);
+    storeDir.createSync(recursive: true);
+    final store = await openStore(directory: storeDir.path);
     return ObjectBoxService._create(store);
+  }
+
+  static Directory storeDirectoryFor(Directory applicationSupportDirectory) {
+    return Directory(p.join(applicationSupportDirectory.path, "obx_changelog"));
   }
 }
