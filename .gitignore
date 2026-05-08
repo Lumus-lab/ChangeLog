@@ -1,4 +1,6 @@
 # Miscellaneous
+.DS_Store
+**/.DS_Store
 *.class
 *.lock
 *.log
@@ -6,6 +8,11 @@
 *.swp
 .buildlog/
 .history
+
+# Local IDE state
+.idea/
+.idea/workspace.xml
+.idea/deviceManager.xml
 
 
 
@@ -120,6 +127,8 @@ app.*.symbols
 # AI Generated Plans
 task.md
 implementation_plan.md
+.superpowers/
+.worktrees/
 
 # API Keys
 .env
@@ -130,6 +139,7 @@ iching.json
 shuogua.json
 shuogua_compile.txt
 tuan.json
+!assets/data/tuan.json
 wen.json
 xiang.json
 xici.json

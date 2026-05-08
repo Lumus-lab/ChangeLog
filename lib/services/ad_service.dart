@@ -10,10 +10,9 @@ class AdService {
   // --- Rewarded Ad IDs ---
   static String get rewardedAdUnitId {
     if (kReleaseMode) {
-      // TODO: Replace with your actual production Ad Unit ID before release
       return Platform.isAndroid
           ? 'ca-app-pub-3940256099942544/5224354917'
-          : 'ca-app-pub-3940256099942544/1712485313';
+          : 'ca-app-pub-3940256099942544/1712485313'; // TODO: iOS 正式 ID
     } else {
       return Platform.isAndroid
           ? 'ca-app-pub-3940256099942544/5224354917'
@@ -24,10 +23,9 @@ class AdService {
   // --- Interstitial Ad IDs ---
   static String get interstitialAdUnitId {
     if (kReleaseMode) {
-      // TODO: Replace with your actual production Ad Unit ID before release
       return Platform.isAndroid
           ? 'ca-app-pub-3940256099942544/1033173712'
-          : 'ca-app-pub-3940256099942544/4411468910';
+          : 'ca-app-pub-3940256099942544/4411468910'; // TODO: iOS 正式 ID
     } else {
       return Platform.isAndroid
           ? 'ca-app-pub-3940256099942544/1033173712'
