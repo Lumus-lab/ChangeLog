@@ -15,6 +15,7 @@ class StorageService {
 
   // --- Keys ---
   static const _kFirstLaunch = 'is_first_launch';
+  static const _kSaveYarrowProcessDetail = 'save_yarrow_process_detail';
   static const _kAdCredits = 'ad_credits';
   static const _kByokApiKey = 'byok_gemini_api_key';
   static const _kLastResetDate = 'last_reset_date';
@@ -33,6 +34,14 @@ class StorageService {
 
   Future<void> setFirstLaunchCompleted() async {
     await _prefs.setBool(_kFirstLaunch, false);
+  }
+
+  bool get saveYarrowProcessDetail {
+    return _prefs.getBool(_kSaveYarrowProcessDetail) ?? true;
+  }
+
+  Future<void> setSaveYarrowProcessDetail(bool value) async {
+    await _prefs.setBool(_kSaveYarrowProcessDetail, value);
   }
 
   // --- Ad Credits (AI interpretation usage) ---

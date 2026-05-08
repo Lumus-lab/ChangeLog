@@ -1,7 +1,11 @@
 import 'dart:math';
 
+import '../models/yarrow_simulation.dart';
+
 class DivinationService {
-  final _random = Random();
+  final Random _random;
+
+  DivinationService({Random? random}) : _random = random ?? Random();
 
   /// 金錢卦 (三枚銅錢)
   /// 丟六次，每次產生 6, 7, 8, 或 9
@@ -16,6 +20,12 @@ class DivinationService {
       lines.add(generateSingleCoin());
     }
     return lines;
+  }
+
+  /// 直覺起卦
+  /// 作為新手預設流程，不要求使用者先理解數字占、金錢卦或籌策。
+  List<int> generateIntuitiveDivination() {
+    return generateCoinDivination();
   }
 
   /// 擲一次三枚銅錢，產生一個爻 (6, 7, 8, 或 9)
@@ -75,10 +85,67 @@ class DivinationService {
     return linesBase;
   }
 
-  /// 籌策 (手動輸入 6,7,8,9 的陣列，需剛好六個由下而上)
-  List<int>? generateYarrowDivination(List<int> userLines) {
-    if (userLines.length != 6) return null;
-    return userLines.toList();
+  /// 籌策模擬：四營十八變，六爻由下而上生成。
+  YarrowSimulationResult generateYarrowSimulation() {
+    final lineDetails = <YarrowLineDetail>[];
+    final lines = <int>[];
+
+    for (int position = 1; position <= 6; position++) {
+      final lineDetail = _generateYarrowLine(position);
+      lineDetails.add(lineDetail);
+      lines.add(lineDetail.inferredValue);
+    }
+
+    return YarrowSimulationResult(
+      lines: lines,
+      detail: YarrowSimulationDetail(lines: lineDetails),
+    );
+  }
+
+  YarrowLineDetail _generateYarrowLine(int position) {
+    var stalks = 49;
+    final changes = <YarrowChange>[];
+
+    for (int changeIndex = 1; changeIndex <= 3; changeIndex++) {
+      final change = _performYarrowChange(
+        stalks: stalks,
+        changeIndex: changeIndex,
+      );
+      changes.add(change);
+      stalks = change.after;
+    }
+
+    return YarrowLineDetail(position: position, changes: changes);
+  }
+
+  YarrowChange _performYarrowChange({
+    required int stalks,
+    required int changeIndex,
+  }) {
+    final left = _random.nextInt(stalks - 1) + 1;
+    final right = stalks - left;
+    const hang = 1;
+    final rightAfterHang = right - hang;
+    final leftRemainder = _yarrowRemainder(left);
+    final rightRemainder = _yarrowRemainder(rightAfterHang);
+    final removed = hang + leftRemainder + rightRemainder;
+
+    return YarrowChange(
+      changeIndex: changeIndex,
+      before: stalks,
+      left: left,
+      right: right,
+      hang: hang,
+      leftRemainder: leftRemainder,
+      rightRemainder: rightRemainder,
+      removed: removed,
+      after: stalks - removed,
+    );
+  }
+
+  int _yarrowRemainder(int stalks) {
+    final remainder = stalks % 4;
+    return remainder == 0 ? 4 : remainder;
   }
 
   /// 將八卦數轉換成三爻 (0下, 1中, 2上)
@@ -118,6 +185,28 @@ class DivinationService {
       return null;
     }
     return _linesToHexagramId(lines, isResulting: true);
+  }
+
+  /// 根據本卦計算互卦 (又稱核卦)。
+  /// 互卦取本卦第 2、3、4 爻為下卦，第 3、4、5 爻為上卦。
+  int calculateMutualHexagramId(List<int> lines) {
+    if (lines.length != 6) {
+      throw ArgumentError.value(lines, 'lines', '互卦計算需要剛好六爻');
+    }
+
+    final primaryBinaryLines = lines
+        .map((line) => (line == 7 || line == 9) ? 1 : 0)
+        .toList();
+    final mutualLines = [
+      primaryBinaryLines[1],
+      primaryBinaryLines[2],
+      primaryBinaryLines[3],
+      primaryBinaryLines[2],
+      primaryBinaryLines[3],
+      primaryBinaryLines[4],
+    ];
+
+    return _lookupHexagramId(mutualLines);
   }
 
   /// 通用的 Hexagram 計算

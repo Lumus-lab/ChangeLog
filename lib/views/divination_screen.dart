@@ -1,33 +1,49 @@
+import 'dart:convert';
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_riverpod/misc.dart' show ProviderException;
+import '../models/yarrow_simulation.dart';
 import '../providers/divination_provider.dart';
+import '../services/storage_service.dart';
 import 'divination_result_screen.dart';
 import 'explanation_screen.dart';
 import 'settings_screen.dart';
+import 'widgets/yarrow_ritual_animation.dart';
 
 class DivinationScreen extends ConsumerStatefulWidget {
-  const DivinationScreen({super.key});
+  final bool enableAnimations;
+
+  const DivinationScreen({super.key, this.enableAnimations = true});
 
   @override
   ConsumerState<DivinationScreen> createState() => _DivinationScreenState();
 }
 
 class _DivinationScreenState extends ConsumerState<DivinationScreen> {
+  static const Duration _yarrowLineRevealDelay = Duration(seconds: 8);
+
   int _selectedMethod = 0; // 0: 數字占, 1: 金錢卦, 2: 籌策
+  bool _advancedMethodsExpanded = false;
   final TextEditingController _questionController = TextEditingController();
 
   final TextEditingController _num1Ctrl = TextEditingController();
   final TextEditingController _num2Ctrl = TextEditingController();
   final TextEditingController _num3Ctrl = TextEditingController();
 
-  final TextEditingController _yarrowCtrl = TextEditingController();
-
   bool _isAnimating = false;
   bool _isCoinRolling = false;
   final List<int> _coinLines = [];
+  bool _saveYarrowProcessDetail = true;
+  YarrowSimulationResult? _activeYarrowSimulation;
+  int _visibleYarrowLineCount = 0;
+  bool _isYarrowAnimating = false;
+  bool _hasShownYarrowResult = false;
+  Timer? _yarrowAnimationTimer;
 
   void _resetCoinState() {
     setState(() {
@@ -37,13 +53,34 @@ class _DivinationScreenState extends ConsumerState<DivinationScreen> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    try {
+      _saveYarrowProcessDetail = ref
+          .read(storageServiceProvider)
+          .saveYarrowProcessDetail;
+    } on ProviderException catch (error) {
+      if (error.exception is! UnimplementedError) rethrow;
+    }
+  }
+
+  @override
   void dispose() {
+    _yarrowAnimationTimer?.cancel();
     _questionController.dispose();
     _num1Ctrl.dispose();
     _num2Ctrl.dispose();
     _num3Ctrl.dispose();
-    _yarrowCtrl.dispose();
     super.dispose();
+  }
+
+  void _resetYarrowState() {
+    _yarrowAnimationTimer?.cancel();
+    _yarrowAnimationTimer = null;
+    _activeYarrowSimulation = null;
+    _visibleYarrowLineCount = 0;
+    _isYarrowAnimating = false;
+    _hasShownYarrowResult = false;
   }
 
   void _resetForm() {
@@ -52,9 +89,11 @@ class _DivinationScreenState extends ConsumerState<DivinationScreen> {
       _num1Ctrl.clear();
       _num2Ctrl.clear();
       _num3Ctrl.clear();
-      _yarrowCtrl.clear();
       _selectedMethod = 0;
-      _resetCoinState();
+      _advancedMethodsExpanded = false;
+      _isCoinRolling = false;
+      _coinLines.clear();
+      _resetYarrowState();
     });
   }
 
@@ -67,15 +106,18 @@ class _DivinationScreenState extends ConsumerState<DivinationScreen> {
       return;
     }
 
-    if (_selectedMethod == 1) {
+    if (_advancedMethodsExpanded && _selectedMethod == 1) {
       _handleCoinDivinationStep(question);
       return;
     }
 
     final divService = ref.read(divinationServiceProvider);
-    List<int>? resultLines;
+    List<int> resultLines;
+    String methodName = "直覺起卦";
 
-    if (_selectedMethod == 0) {
+    if (!_advancedMethodsExpanded) {
+      resultLines = divService.generateIntuitiveDivination();
+    } else if (_selectedMethod == 0) {
       // 數字占
       final n1 = int.tryParse(_num1Ctrl.text);
       final n2 = int.tryParse(_num2Ctrl.text);
@@ -92,27 +134,10 @@ class _DivinationScreenState extends ConsumerState<DivinationScreen> {
         return;
       }
       resultLines = divService.generateNumberDivination(n1, n2, n3);
+      methodName = "數字占";
     } else {
-      // 籌策
-      final input = _yarrowCtrl.text.replaceAll(' ', '').replaceAll(',', '');
-      if (input.length != 6) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('請輸入剛剛好 6 個數字 (6, 7, 8, 9)')),
-        );
-        return;
-      }
-      List<int> lines = [];
-      for (int i = 0; i < input.length; i++) {
-        final val = int.tryParse(input[i]);
-        if (val == null || val < 6 || val > 9) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(const SnackBar(content: Text('籌策輸入只能包含 6, 7, 8, 9')));
-          return;
-        }
-        lines.add(val);
-      }
-      resultLines = divService.generateYarrowDivination(lines);
+      await _handleYarrowSimulation(question);
+      return;
     }
 
     setState(() {
@@ -122,12 +147,13 @@ class _DivinationScreenState extends ConsumerState<DivinationScreen> {
     // 模擬易經運算動畫時間
     await Future.delayed(const Duration(seconds: 3));
 
+    if (!mounted) return;
+
     setState(() {
       _isAnimating = false;
     });
 
-    if (mounted && resultLines != null) {
-      String methodName = _selectedMethod == 0 ? "數字占" : "籌策";
+    if (mounted) {
       _showResultDialog(resultLines, question, methodName);
     }
   }
@@ -169,11 +195,75 @@ class _DivinationScreenState extends ConsumerState<DivinationScreen> {
     }
   }
 
+  Future<void> _handleYarrowSimulation(String question) async {
+    final divService = ref.read(divinationServiceProvider);
+    final simulation = divService.generateYarrowSimulation();
+    _yarrowAnimationTimer?.cancel();
+
+    setState(() {
+      _activeYarrowSimulation = simulation;
+      _visibleYarrowLineCount = 0;
+      _isYarrowAnimating = true;
+      _hasShownYarrowResult = false;
+    });
+
+    _yarrowAnimationTimer = Timer.periodic(_yarrowLineRevealDelay, (_) {
+      if (!mounted || !_isYarrowAnimating) {
+        _yarrowAnimationTimer?.cancel();
+        _yarrowAnimationTimer = null;
+        return;
+      }
+
+      final nextCount = _visibleYarrowLineCount + 1;
+      setState(() => _visibleYarrowLineCount = nextCount);
+
+      if (nextCount >= simulation.lines.length) {
+        _completeYarrowSimulation(question);
+      }
+    });
+  }
+
+  void _completeYarrowSimulation(String question) {
+    final simulation = _activeYarrowSimulation;
+    if (!mounted ||
+        _hasShownYarrowResult ||
+        simulation == null ||
+        question.isEmpty) {
+      return;
+    }
+
+    _yarrowAnimationTimer?.cancel();
+    _yarrowAnimationTimer = null;
+
+    final methodDetailJson = _saveYarrowProcessDetail
+        ? jsonEncode(simulation.detail.toJson())
+        : null;
+
+    setState(() {
+      _hasShownYarrowResult = true;
+      _visibleYarrowLineCount = simulation.lines.length;
+      _isYarrowAnimating = false;
+    });
+
+    _showResultDialog(
+      simulation.lines,
+      question,
+      '籌策',
+      methodDetailJson: methodDetailJson,
+    );
+  }
+
+  void _skipYarrowAnimation() {
+    final question = _questionController.text.trim();
+    _completeYarrowSimulation(question);
+  }
+
   void _showResultDialog(
     List<int> lines,
     String question,
-    String method,
-  ) async {
+    String method, {
+    String? methodDetailJson,
+  }) async {
     await Navigator.push(
       context,
       MaterialPageRoute(
@@ -181,6 +271,7 @@ class _DivinationScreenState extends ConsumerState<DivinationScreen> {
           lines: lines,
           question: question,
           method: method,
+          methodDetailJson: methodDetailJson,
         ),
       ),
     );
@@ -230,100 +321,144 @@ class _DivinationScreenState extends ConsumerState<DivinationScreen> {
       body: SafeArea(
         child: AnimatedSwitcher(
           duration: const Duration(milliseconds: 500),
-          child: _isAnimating ? _buildAnimationView() : _buildMainForm(primary),
+          child: _isYarrowAnimating
+              ? _buildYarrowAnimationView()
+              : _isAnimating
+              ? _buildAnimationView()
+              : _buildMainForm(primary),
         ),
       ),
     );
   }
 
   Widget _buildMainForm(Color primary) {
-    return SingleChildScrollView(
+    return Stack(
       key: const ValueKey('form'),
-      padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Center(
-            child:
-                SizedBox(
-                      width: 240,
-                      height: 240,
-                      child: SvgPicture.asset('assets/images/app_icon.svg'),
-                    )
-                    .animate(onPlay: (controller) => controller.repeat())
-                    .shimmer(duration: 4000.ms, color: Colors.white24)
-                    .rotate(duration: 40.seconds),
-          ),
-          const SizedBox(height: 48),
-
-          TextField(
-            controller: _questionController,
-            style: const TextStyle(fontSize: 18),
-            maxLength: 50,
-            decoration: InputDecoration(
-              labelText: '占卜事項 / 動機',
-              hintText: '例：這個月的專案能順利上線嗎？',
-              labelStyle: TextStyle(color: primary),
-              filled: true,
-              fillColor: Theme.of(context).colorScheme.surface,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
-                borderSide: BorderSide.none,
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
-                borderSide: BorderSide(color: primary, width: 2),
-              ),
-            ),
-          ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.2, end: 0),
-
-          const SizedBox(height: 16),
-          // 三不占與須知
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: primary.withValues(alpha: 0.05),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: primary.withValues(alpha: 0.2)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(Icons.gavel, size: 18, color: primary),
-                    const SizedBox(width: 8),
-                    Text(
-                      '占卦須知 (三不占)',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: primary,
-                      ),
-                    ),
-                  ],
+      children: [
+        Positioned.fill(
+          child: IgnorePointer(
+            child: Align(
+              key: const ValueKey('divination-background-logo-align'),
+              alignment: Alignment.center,
+              child: _maybeRepeatRotate(
+                Opacity(
+                  opacity: 0.08,
+                  child: SizedBox(
+                    key: const ValueKey('divination-background-logo'),
+                    width: 520,
+                    height: 520,
+                    child: SvgPicture.asset('assets/images/app_icon.svg'),
+                  ),
                 ),
-                const SizedBox(height: 12),
-                _buildRuleItem('不誠不占：', '心意不誠者不占'),
-                _buildRuleItem('不義不占：', '不義之事、違法之事不占'),
-                _buildRuleItem('不疑不占：', '無所疑惑、僅供戲玩不占'),
-                const Divider(height: 24),
-                _buildRuleItem('易經誡示：', '「初筮告，再三瀆，瀆則不告」— 同一事不可連占。'),
-              ],
+                duration: 60.seconds,
+              ),
             ),
-          ).animate().fadeIn(delay: 250.ms).slideY(begin: 0.1, end: 0),
+          ),
+        ),
+        SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 28.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                '先問一件正在猶豫的事',
+                style: GoogleFonts.notoSansTc(
+                  fontSize: 26,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                  height: 1.3,
+                ),
+              ).animateIfEnabled(
+                widget.enableAnimations,
+                (child) => child
+                    .animate()
+                    .fadeIn(delay: 120.ms)
+                    .slideY(begin: 0.1, end: 0),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '寫下問題，讓 ChangeLog 帶你完成一次起卦、整理卦象，並留下日後可回顧的紀錄。',
+                style: TextStyle(
+                  color: Colors.grey[300],
+                  fontSize: 15,
+                  height: 1.6,
+                ),
+              ).animateIfEnabled(
+                widget.enableAnimations,
+                (child) => child.animate().fadeIn(delay: 180.ms),
+              ),
+              const SizedBox(height: 24),
+              TextField(
+                controller: _questionController,
+                style: const TextStyle(fontSize: 18),
+                maxLength: 80,
+                minLines: 2,
+                maxLines: 3,
+                decoration: InputDecoration(
+                  labelText: '想問的事',
+                  hintText: '例：我該不該接受這個合作邀請？',
+                  helperText: '問題越具體，日後越容易回顧。',
+                  helperMaxLines: 2,
+                  labelStyle: TextStyle(color: primary),
+                  filled: true,
+                  fillColor: Theme.of(context).colorScheme.surface,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: primary, width: 2),
+                  ),
+                ),
+              ).animateIfEnabled(
+                widget.enableAnimations,
+                (child) => child
+                    .animate()
+                    .fadeIn(delay: 220.ms)
+                    .slideY(begin: 0.1, end: 0),
+              ),
+              const SizedBox(height: 12),
+              _buildActionButton(),
+              const SizedBox(height: 18),
+              _buildAdvancedMethods(primary),
+              const SizedBox(height: 12),
+              _buildRulesSummary(primary),
+              const SizedBox(height: 40),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
 
-          const SizedBox(height: 32),
-          Text(
-            '選擇起卦方式',
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.grey[400],
-              letterSpacing: 1.2,
-            ),
-          ).animate().fadeIn(delay: 300.ms),
-          const SizedBox(height: 16),
-
+  Widget _buildAdvancedMethods(Color primary) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.92),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.white12),
+      ),
+      child: ExpansionTile(
+        initiallyExpanded: _advancedMethodsExpanded,
+        onExpansionChanged: (expanded) {
+          setState(() {
+            _advancedMethodsExpanded = expanded;
+            if (!expanded) {
+              _isCoinRolling = false;
+              _coinLines.clear();
+            }
+          });
+        },
+        tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+        childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        leading: Icon(Icons.tune, color: primary),
+        title: const Text(
+          '進階起卦方式',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        subtitle: const Text('不確定怎麼選時，可以先使用預設方式。'),
+        children: [
           SegmentedButton<int>(
             segments: const [
               ButtonSegment(value: 0, label: Text('數字占')),
@@ -334,7 +469,9 @@ class _DivinationScreenState extends ConsumerState<DivinationScreen> {
             onSelectionChanged: (Set<int> newSelection) {
               setState(() {
                 _selectedMethod = newSelection.first;
-                _resetCoinState();
+                _isCoinRolling = false;
+                _coinLines.clear();
+                _resetYarrowState();
               });
             },
             style: ButtonStyle(
@@ -354,9 +491,10 @@ class _DivinationScreenState extends ConsumerState<DivinationScreen> {
                 return Colors.white;
               }),
             ),
-          ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.2, end: 0),
-
-          const SizedBox(height: 32),
+          ),
+          const SizedBox(height: 12),
+          _buildMethodHint(),
+          const SizedBox(height: 16),
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 300),
             transitionBuilder: (child, animation) {
@@ -364,7 +502,7 @@ class _DivinationScreenState extends ConsumerState<DivinationScreen> {
                 opacity: animation,
                 child: SlideTransition(
                   position: Tween<Offset>(
-                    begin: const Offset(0.0, 0.2),
+                    begin: const Offset(0.0, 0.1),
                     end: Offset.zero,
                   ).animate(animation),
                   child: child,
@@ -373,28 +511,57 @@ class _DivinationScreenState extends ConsumerState<DivinationScreen> {
             },
             child: _buildMethodInput(),
           ),
+        ],
+      ),
+    );
+  }
 
-          const SizedBox(height: 64),
-          _buildActionButton(),
+  Widget _buildRulesSummary(Color primary) {
+    return Container(
+      decoration: BoxDecoration(
+        color: primary.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: primary.withValues(alpha: 0.12)),
+      ),
+      child: ExpansionTile(
+        tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+        childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        leading: Icon(Icons.info_outline, color: primary, size: 20),
+        title: Text(
+          '輕量須知',
+          style: TextStyle(
+            color: Colors.grey[200],
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        subtitle: const Text('心中有疑，誠意提問；同一件事不反覆連占。'),
+        children: [
+          _buildRuleItem('不誠不占：', '心意不誠者不占'),
+          _buildRuleItem('不義不占：', '不義之事、違法之事不占'),
+          _buildRuleItem('不疑不占：', '無所疑惑、僅供戲玩不占'),
+          const Divider(height: 24),
+          _buildRuleItem('易經誡示：', '「初筮告，再三瀆，瀆則不告」— 同一事不可連占。'),
         ],
       ),
     );
   }
 
   Widget _buildActionButton() {
-    if (_selectedMethod == 1) {
-      String btnText = _isCoinRolling
-          ? '停止'
-          : '開始骰 (${_coinLines.length + 1}/6)';
-      return ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: _isCoinRolling
-                  ? Colors.redAccent
-                  : Theme.of(context).colorScheme.primary,
-            ),
-            onPressed: _startDivination,
-            child: Text(btnText),
-          )
+    if (_advancedMethodsExpanded && _selectedMethod == 1) {
+      String btnText = _isCoinRolling ? '停止' : '擲第 ${_coinLines.length + 1} 爻';
+      final button = ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: _isCoinRolling
+              ? Colors.redAccent
+              : Theme.of(context).colorScheme.primary,
+        ),
+        onPressed: _startDivination,
+        child: Text(btnText),
+      );
+
+      if (!widget.enableAnimations) return button;
+
+      return button
           .animate(target: _isCoinRolling ? 1 : 0)
           .scale(
             begin: const Offset(1, 1),
@@ -403,10 +570,14 @@ class _DivinationScreenState extends ConsumerState<DivinationScreen> {
           );
     }
 
-    return ElevatedButton(
-          onPressed: _startDivination,
-          child: const Text('開始起卦 / Start Divination'),
-        )
+    final button = ElevatedButton(
+      onPressed: _startDivination,
+      child: const Text('開始一卦'),
+    );
+
+    if (!widget.enableAnimations) return button;
+
+    return button
         .animate(onPlay: (controller) => controller.repeat(reverse: true))
         .scale(
           begin: const Offset(1, 1),
@@ -416,16 +587,23 @@ class _DivinationScreenState extends ConsumerState<DivinationScreen> {
         .shimmer(duration: 4000.ms, color: Colors.white30);
   }
 
+  Widget _maybeRepeatRotate(Widget child, {required Duration duration}) {
+    if (!widget.enableAnimations) return child;
+    return child
+        .animate(onPlay: (controller) => controller.repeat())
+        .rotate(duration: duration);
+  }
+
   Widget _buildMethodInput() {
     if (_selectedMethod == 0) {
       return Row(
         key: const ValueKey(0),
         children: [
-          Expanded(child: _buildNumField(_num1Ctrl, '下卦數')),
+          Expanded(child: _buildNumField(_num1Ctrl, '第一數', '下卦數')),
           const SizedBox(width: 12),
-          Expanded(child: _buildNumField(_num2Ctrl, '上卦數')),
+          Expanded(child: _buildNumField(_num2Ctrl, '第二數', '上卦數')),
           const SizedBox(width: 12),
-          Expanded(child: _buildNumField(_num3Ctrl, '動爻數')),
+          Expanded(child: _buildNumField(_num3Ctrl, '第三數', '動爻數')),
         ],
       );
     } else if (_selectedMethod == 1) {
@@ -461,6 +639,11 @@ class _DivinationScreenState extends ConsumerState<DivinationScreen> {
                   fontSize: 16,
                 ),
                 textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '已完成 ${_coinLines.length}/6 爻',
+                style: TextStyle(color: Colors.grey[500], fontSize: 13),
               ),
               if (_coinLines.isNotEmpty)
                 Padding(
@@ -503,31 +686,41 @@ class _DivinationScreenState extends ConsumerState<DivinationScreen> {
             color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
             width: 1,
           ),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(8),
         ),
         child: Padding(
-          padding: const EdgeInsets.all(24.0),
+          padding: const EdgeInsets.all(20.0),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(Icons.edit_note, size: 48, color: Colors.grey),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _yarrowCtrl,
-                keyboardType: TextInputType.number,
-                textAlign: TextAlign.center,
-                style: const TextStyle(letterSpacing: 8, fontSize: 20),
-                decoration: InputDecoration(
-                  labelText: '輸入 6, 7, 8, 9 (由下而上, 共六個)',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+              Row(
+                children: [
+                  Icon(
+                    Icons.grass,
+                    color: Theme.of(context).colorScheme.primary,
+                    size: 28,
                   ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(
-                      color: Theme.of(context).colorScheme.primary,
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Text(
+                      '模擬四營十八變，逐步得出六爻。',
+                      style: TextStyle(height: 1.5),
                     ),
                   ),
-                ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('保存完整過程'),
+                subtitle: const Text('關閉時僅保存卦象結果。'),
+                value: _saveYarrowProcessDetail,
+                onChanged: (value) async {
+                  setState(() => _saveYarrowProcessDetail = value);
+                  await ref
+                      .read(storageServiceProvider)
+                      .setSaveYarrowProcessDetail(value);
+                },
               ),
             ],
           ),
@@ -536,7 +729,41 @@ class _DivinationScreenState extends ConsumerState<DivinationScreen> {
     }
   }
 
-  Widget _buildNumField(TextEditingController ctrl, String label) {
+  Widget _buildMethodHint() {
+    final text = switch (_selectedMethod) {
+      0 => '數字占：適合快速起卦，輸入三組直覺想到的正整數。',
+      1 => '金錢卦：模擬擲硬幣六次，保留儀式感。',
+      _ => '籌策：模擬傳統分二、掛一、揲四、歸奇的起卦過程。',
+    };
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(
+          Icons.lightbulb_outline,
+          color: Theme.of(context).colorScheme.primary,
+          size: 18,
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            text,
+            style: TextStyle(
+              color: Colors.grey[300],
+              fontSize: 13,
+              height: 1.5,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildNumField(
+    TextEditingController ctrl,
+    String label,
+    String helper,
+  ) {
     return TextField(
       controller: ctrl,
       keyboardType: TextInputType.number,
@@ -544,14 +771,15 @@ class _DivinationScreenState extends ConsumerState<DivinationScreen> {
       style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
       decoration: InputDecoration(
         labelText: label,
+        helperText: helper,
         filled: true,
         fillColor: Theme.of(context).colorScheme.surface,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(
             color: Theme.of(context).colorScheme.primary,
             width: 2,
@@ -596,6 +824,86 @@ class _DivinationScreenState extends ConsumerState<DivinationScreen> {
     );
   }
 
+  Widget _buildYarrowAnimationView() {
+    final simulation = _activeYarrowSimulation;
+    final primary = Theme.of(context).colorScheme.primary;
+    final visibleLines = simulation == null
+        ? <int>[]
+        : simulation.lines.take(_visibleYarrowLineCount).toList();
+    final nextLine = (_visibleYarrowLineCount + 1).clamp(1, 6);
+    final progress = _visibleYarrowLineCount / 6;
+
+    return SingleChildScrollView(
+      key: const ValueKey('yarrow-animating'),
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            '籌策推演中',
+            style: GoogleFonts.notoSansTc(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: primary,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            '分二 · 掛一 · 揲四 · 歸奇',
+            style: TextStyle(color: Colors.grey[300], fontSize: 16),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            _visibleYarrowLineCount >= 6
+                ? '六爻已成，整理卦象中...'
+                : '第 $nextLine 爻正在成形，完整推演約 48 秒',
+            style: TextStyle(color: Colors.grey[500], fontSize: 13),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 32),
+          if (simulation != null)
+            YarrowRitualAnimation(
+              simulation: simulation,
+              visibleLineCount: _visibleYarrowLineCount,
+              enableAnimations: widget.enableAnimations,
+            ),
+          const SizedBox(height: 24),
+          LinearProgressIndicator(
+            value: progress,
+            minHeight: 5,
+            backgroundColor: Theme.of(context).colorScheme.surface,
+            color: primary,
+            borderRadius: BorderRadius.circular(999),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            '已成 $_visibleYarrowLineCount / 6 爻',
+            style: TextStyle(color: Colors.grey[400], fontSize: 13),
+          ),
+          const SizedBox(height: 20),
+          Wrap(
+            spacing: 8,
+            children: List.generate(6, (index) {
+              final hasValue = index < visibleLines.length;
+              return Chip(
+                label: Text(hasValue ? '${visibleLines[index]}' : '·'),
+                backgroundColor: hasValue
+                    ? primary.withValues(alpha: 0.18)
+                    : Theme.of(context).colorScheme.surface,
+              );
+            }),
+          ),
+          const SizedBox(height: 24),
+          TextButton.icon(
+            onPressed: _skipYarrowAnimation,
+            icon: const Icon(Icons.skip_next),
+            label: const Text('略過動畫'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildRuleItem(String title, String content) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 4.0),
@@ -612,5 +920,15 @@ class _DivinationScreenState extends ConsumerState<DivinationScreen> {
         ),
       ),
     );
+  }
+}
+
+extension _ConditionalAnimation on Widget {
+  Widget animateIfEnabled(
+    bool enabled,
+    Widget Function(Widget child) animationBuilder,
+  ) {
+    if (!enabled) return this;
+    return animationBuilder(this);
   }
 }

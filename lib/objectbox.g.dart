@@ -22,7 +22,7 @@ final _entities = <obx_int.ModelEntity>[
   obx_int.ModelEntity(
     id: const obx_int.IdUid(1, 4948003097195770275),
     name: 'DivinationRecord',
-    lastPropertyId: const obx_int.IdUid(15, 5903624958638999895),
+    lastPropertyId: const obx_int.IdUid(16, 5723866098524317621),
     flags: 0,
     properties: <obx_int.ModelProperty>[
       obx_int.ModelProperty(
@@ -115,6 +115,12 @@ final _entities = <obx_int.ModelEntity>[
         type: 9,
         flags: 0,
       ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(16, 5723866098524317621),
+        name: 'methodDetailJson',
+        type: 9,
+        flags: 0,
+      ),
     ],
     relations: <obx_int.ModelRelation>[],
     backlinks: <obx_int.ModelBacklink>[],
@@ -195,6 +201,9 @@ obx_int.ModelDefinition getObjectBoxModel() {
         final changingLinesStrOffset = object.changingLinesStr == null
             ? null
             : fbb.writeString(object.changingLinesStr!);
+        final methodDetailJsonOffset = object.methodDetailJson == null
+            ? null
+            : fbb.writeString(object.methodDetailJson!);
         final interpretationOffset = object.interpretation == null
             ? null
             : fbb.writeString(object.interpretation!);
@@ -211,7 +220,7 @@ obx_int.ModelDefinition getObjectBoxModel() {
         final aiInterpretationOffset = object.aiInterpretation == null
             ? null
             : fbb.writeString(object.aiInterpretation!);
-        fbb.startTable(16);
+        fbb.startTable(17);
         fbb.addInt64(0, object.id);
         fbb.addInt64(1, object.createdAt.millisecondsSinceEpoch);
         fbb.addOffset(2, questionOffset);
@@ -227,6 +236,7 @@ obx_int.ModelDefinition getObjectBoxModel() {
         fbb.addOffset(12, rawHexagramNumbersOffset);
         fbb.addOffset(13, changingLinesOffset);
         fbb.addOffset(14, aiInterpretationOffset);
+        fbb.addOffset(15, methodDetailJsonOffset);
         fbb.finish(fbb.endTable());
         return object.id;
       },
@@ -302,7 +312,10 @@ obx_int.ModelDefinition getObjectBoxModel() {
               ).vTableGet(buffer, rootOffset, 30, [])
               ..aiInterpretation = const fb.StringReader(
                 asciiOptimization: true,
-              ).vTableGetNullable(buffer, rootOffset, 32);
+              ).vTableGetNullable(buffer, rootOffset, 32)
+              ..methodDetailJson = const fb.StringReader(
+                asciiOptimization: true,
+              ).vTableGetNullable(buffer, rootOffset, 34);
 
         return object;
       },
@@ -387,5 +400,10 @@ class DivinationRecord_ {
   /// See [DivinationRecord.aiInterpretation].
   static final aiInterpretation = obx.QueryStringProperty<DivinationRecord>(
     _entities[0].properties[14],
+  );
+
+  /// See [DivinationRecord.methodDetailJson].
+  static final methodDetailJson = obx.QueryStringProperty<DivinationRecord>(
+    _entities[0].properties[15],
   );
 }

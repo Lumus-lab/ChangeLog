@@ -32,9 +32,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Future<void> _checkFirstLaunch() async {
     final storage = ref.read(storageServiceProvider);
-    if (storage.isFirstLaunch) {
-      ExplanationScreen.show(context);
-      await storage.setFirstLaunchCompleted();
+    if (storage.isFirstLaunch && mounted) {
+      await ExplanationScreen.showWelcome(
+        context,
+        onStart: storage.setFirstLaunchCompleted,
+        onCompleteAfterHelp: storage.setFirstLaunchCompleted,
+      );
     }
   }
 

@@ -17,7 +17,8 @@ class NoAdCreditsException implements Exception {
 class AIInterpreterService {
   final StorageService _storage;
 
-  final String _workerUrl = dotenv.env['WORKER_URL'] ??
+  final String _workerUrl =
+      dotenv.env['WORKER_URL'] ??
       (throw StateError('WORKER_URL 未在 .env 中設定，請確認 .env 檔案包含 WORKER_URL。'));
   final String _appId = 'com.lumusxlab.changelog';
 
@@ -27,6 +28,7 @@ class AIInterpreterService {
     required String question,
     required Hexagram primaryHexagram,
     Hexagram? resultingHexagram,
+    Hexagram? mutualHexagram,
     required String guidance,
     required List<int> lines,
   }) async {
@@ -40,6 +42,7 @@ class AIInterpreterService {
         question: question,
         primaryHexagram: primaryHexagram,
         resultingHexagram: resultingHexagram,
+        mutualHexagram: mutualHexagram,
         guidance: guidance,
         lines: lines,
       );
@@ -54,6 +57,7 @@ class AIInterpreterService {
           question: question,
           primaryHexagram: primaryHexagram,
           resultingHexagram: resultingHexagram,
+          mutualHexagram: mutualHexagram,
           guidance: guidance,
           lines: lines,
         );
@@ -67,16 +71,17 @@ class AIInterpreterService {
   }
 
   /// 組裝統一的 AI prompt（BYOK 與 Worker 共用）
-  String _buildPrompt({
+  static String buildPrompt({
     required String question,
     required Hexagram primaryHexagram,
     Hexagram? resultingHexagram,
+    Hexagram? mutualHexagram,
     required String guidance,
     required List<int> lines,
   }) {
     final promptBuffer = StringBuffer();
     promptBuffer.writeln(
-      '你是一位深研《易經》哲學的引導者。你的目標不是「算命」或「給予指令」，而是透過卦象中蘊含的「時」與「位」的智慧，引發使用者深度思考，從而發現自己的路。',
+      '你是一位深研《易經》哲學的引導者。你的目標不是「算命」或「給予指令」，而是透過卦象中蘊含的「時」與「位」的智慧，協助使用者看清目前情境的結構、張力與可觀察的變化。',
     );
     promptBuffer.writeln('使用者目前的具體困惑是：「$question」');
     promptBuffer.writeln(
@@ -106,22 +111,39 @@ class AIInterpreterService {
         '之卦為：【${resultingHexagram.name}卦】（卦辭：${resultingHexagram.description}）',
       );
     }
+    if (mutualHexagram != null) {
+      promptBuffer.writeln(
+        '互卦為：【${mutualHexagram.name}卦】（卦辭：${mutualHexagram.description}）。互卦只作補充視角，用來觀察事情的內在結構或隱藏動因，不可凌駕本卦、變爻、之卦與朱熹解卦法則。',
+      );
+    }
     promptBuffer.writeln('根據傳統朱熹解卦法則，目前的觀測重心為：「$guidance」');
 
     promptBuffer.writeln('\n請遵循以下原則進行解析：');
-    promptBuffer.writeln('1. **絕對不要給予直接的建議或下一步該怎麼做的指令。** 你的任務是解釋現狀的「動態性質」。');
+    promptBuffer.writeln('1. 不要給予直接的建議或下一步該怎麼做的指令。不可使用「你應該」「你必須」「立刻去做」這類命令語。');
     promptBuffer.writeln(
-      '2. **著重於分析「時 (Timing)」與「位 (Position, Status)」**。根據上述變爻的「位置」與「爻辭」內容，解析目前的情境是屬於積蓄力量、等待時機、還是該順勢而為？使用者的內在狀態與外在環境處於什麼樣的相對位置？',
+      '2. 可以明確指出卦象傾向、張力、警訊或正在形成的變化，但要用「這卦比較像是在提醒...」「目前關鍵可能是...」「可觀察的是...」這類觀察語氣。',
     );
     promptBuffer.writeln(
-      '3. **啟發與發現**。用客觀、富有哲理且溫和的白話，解析卦象如何對映使用者的問題，最後提出一個「反思性的提問」，讓使用者自己決定下一步。',
+      '3. 著重於分析「時 (Timing)」與「位 (Position, Status)」。根據變爻的位置與爻辭，說明目前情境是偏向蓄勢、受阻、調整、等待、推進，或正在轉折。',
     );
-    promptBuffer.writeln('4. **格式規範**：');
+    promptBuffer.writeln('4. 互卦若存在，請放在「互卦補充」段落，只能作為輔助，不要讓互卦成為主判斷。');
+    promptBuffer.writeln('5. 格式規範：');
     promptBuffer.writeln('   - 不要自我介紹。');
-    promptBuffer.writeln('   - 開場請用：「針對您求問的『$question』，目前的卦象呈現為『${primaryHexagram.name}』...」');
-    promptBuffer.writeln('   - 使用標準 Markdown 格式（**粗體**、### 標題）。');
-    promptBuffer.writeln('   - 最後必須提出一個「反思性提問」，讓使用者自己決定下一步。');
-    promptBuffer.writeln('5. **篇幅限制**。解析字數請控制在 350 字以內，格式簡潔易讀。');
+    promptBuffer.writeln('   - 僅使用以下 Markdown 標題，且順序不可改：');
+    promptBuffer.writeln('     ### 卦象一句話');
+    promptBuffer.writeln('     ### 時與位');
+    promptBuffer.writeln('     ### 變動重點');
+    if (mutualHexagram != null) {
+      promptBuffer.writeln('     ### 互卦補充');
+    }
+    promptBuffer.writeln('     ### 留給你的觀察題');
+    promptBuffer.writeln('   - 每個標題下只寫 1 到 2 句，段落間留一個空行。');
+    promptBuffer.writeln('   - 不要使用 Markdown 引用區塊，也就是不要使用 >。');
+    promptBuffer.writeln(
+      '   - 可以使用粗體，但不要把粗體放在引號內，也不要輸出「**文字**」或 "**文字**" 這類引號與粗體混用格式。',
+    );
+    promptBuffer.writeln('   - 最後必須提出一個反思性提問，讓使用者自己決定下一步。');
+    promptBuffer.writeln('6. 篇幅限制。解析字數請控制在 450 字以內，格式簡潔易讀。');
 
     return promptBuffer.toString();
   }
@@ -131,18 +153,17 @@ class AIInterpreterService {
     required String question,
     required Hexagram primaryHexagram,
     Hexagram? resultingHexagram,
+    Hexagram? mutualHexagram,
     required String guidance,
     required List<int> lines,
   }) async {
-    final model = GenerativeModel(
-      model: AIConfig.geminiModel,
-      apiKey: apiKey,
-    );
+    final model = GenerativeModel(model: AIConfig.geminiModel, apiKey: apiKey);
 
-    final prompt = _buildPrompt(
+    final prompt = buildPrompt(
       question: question,
       primaryHexagram: primaryHexagram,
       resultingHexagram: resultingHexagram,
+      mutualHexagram: mutualHexagram,
       guidance: guidance,
       lines: lines,
     );
@@ -160,13 +181,15 @@ class AIInterpreterService {
     required String question,
     required Hexagram primaryHexagram,
     Hexagram? resultingHexagram,
+    Hexagram? mutualHexagram,
     required String guidance,
     required List<int> lines,
   }) async {
-    final prompt = _buildPrompt(
+    final prompt = buildPrompt(
       question: question,
       primaryHexagram: primaryHexagram,
       resultingHexagram: resultingHexagram,
+      mutualHexagram: mutualHexagram,
       guidance: guidance,
       lines: lines,
     );

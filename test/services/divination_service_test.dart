@@ -1,4 +1,8 @@
+import 'dart:convert';
+import 'dart:math';
+
 import 'package:flutter_test/flutter_test.dart';
+import 'package:changelog/models/yarrow_simulation.dart';
 import 'package:changelog/services/divination_service.dart';
 
 void main() {
@@ -30,13 +34,28 @@ void main() {
     });
   });
 
+  group('generateIntuitiveDivination', () {
+    test('produces exactly 6 valid lines without requiring method inputs', () {
+      final lines = service.generateIntuitiveDivination();
+
+      expect(lines.length, 6);
+      for (final val in lines) {
+        expect(val, isIn([6, 7, 8, 9]));
+      }
+    });
+  });
+
   group('generateNumberDivination', () {
     test('produces exactly 6 lines with one changing line', () {
       final lines = service.generateNumberDivination(168, 399, 825);
       expect(lines.length, 6);
 
       final changingCount = lines.where((v) => v == 6 || v == 9).length;
-      expect(changingCount, 1, reason: '數字占 always has exactly one changing line');
+      expect(
+        changingCount,
+        1,
+        reason: '數字占 always has exactly one changing line',
+      );
     });
 
     test('all values are in {6, 7, 8, 9}', () {
@@ -48,28 +67,121 @@ void main() {
 
     test('remainder 0 means 上爻 (index 5) is changing', () {
       final lines = service.generateNumberDivination(100, 200, 6);
-      expect(lines[5] == 6 || lines[5] == 9, isTrue,
-          reason: 'Index 5 (上爻) should be the changing line when num3 divisible by 6');
+      expect(
+        lines[5] == 6 || lines[5] == 9,
+        isTrue,
+        reason:
+            'Index 5 (上爻) should be the changing line when num3 divisible by 6',
+      );
     });
 
     test('remainder 1 means 初爻 (index 0) is changing', () {
       final lines = service.generateNumberDivination(100, 200, 7);
-      expect(lines[0] == 6 || lines[0] == 9, isTrue,
-          reason: 'Index 0 (初爻) should be the changing line when num3 % 6 == 1');
+      expect(
+        lines[0] == 6 || lines[0] == 9,
+        isTrue,
+        reason: 'Index 0 (初爻) should be the changing line when num3 % 6 == 1',
+      );
     });
   });
 
-  group('generateYarrowDivination', () {
-    test('returns null for invalid input length', () {
-      expect(service.generateYarrowDivination([6, 7, 8]), isNull);
-      expect(service.generateYarrowDivination([6, 7, 8, 9, 7, 8, 7]), isNull);
+  group('generateYarrowSimulation', () {
+    test('produces six valid line values and full eighteen-change detail', () {
+      final service = DivinationService(random: Random(1));
+      final result = service.generateYarrowSimulation();
+
+      expect(result.lines.length, 6);
+      expect(result.detail.lines.length, 6);
+      expect(result.detail.inferredLineValues, result.lines);
+
+      for (final line in result.detail.lines) {
+        expect(line.position, inInclusiveRange(1, 6));
+        expect(line.changes.length, 3);
+        for (final change in line.changes) {
+          expect(change.hang, 1);
+          expect(
+            change.removed,
+            change.hang + change.leftRemainder + change.rightRemainder,
+          );
+          expect(change.after, change.before - change.removed);
+          expect(change.left + change.right, change.before);
+          expect(change.leftRemainder, inInclusiveRange(1, 4));
+          expect(change.rightRemainder, inInclusiveRange(1, 4));
+        }
+        expect(line.inferredValue, isIn([6, 7, 8, 9]));
+      }
     });
 
-    test('returns input for valid 6-element list with values in {6,7,8,9}', () {
-      final input = [6, 7, 8, 9, 7, 8];
-      final result = service.generateYarrowDivination(input);
-      expect(result, input);
+    test('does not duplicate final line values inside method detail JSON', () {
+      final service = DivinationService(random: Random(2));
+      final result = service.generateYarrowSimulation();
+
+      expect(result.detail.toJson().toString(), isNot(contains('value')));
+      expect(result.detail.inferredLineValues, result.lines);
     });
+  });
+
+  group('YarrowSimulationDetail JSON', () {
+    test(
+      'round-trips structured process detail without storing line values',
+      () {
+        final detail = YarrowSimulationDetail(
+          lines: [
+            YarrowLineDetail(
+              position: 1,
+              changes: [
+                YarrowChange(
+                  changeIndex: 1,
+                  before: 49,
+                  left: 24,
+                  right: 25,
+                  hang: 1,
+                  leftRemainder: 4,
+                  rightRemainder: 4,
+                  removed: 9,
+                  after: 40,
+                ),
+                YarrowChange(
+                  changeIndex: 2,
+                  before: 40,
+                  left: 19,
+                  right: 21,
+                  hang: 1,
+                  leftRemainder: 3,
+                  rightRemainder: 4,
+                  removed: 8,
+                  after: 32,
+                ),
+                YarrowChange(
+                  changeIndex: 3,
+                  before: 32,
+                  left: 16,
+                  right: 16,
+                  hang: 1,
+                  leftRemainder: 4,
+                  rightRemainder: 3,
+                  removed: 8,
+                  after: 24,
+                ),
+              ],
+            ),
+          ],
+        );
+
+        final encoded = jsonEncode(detail.toJson());
+        expect(encoded, isNot(contains('"value"')));
+
+        final decoded = YarrowSimulationDetail.fromJson(
+          jsonDecode(encoded) as Map<String, dynamic>,
+        );
+
+        expect(decoded.type, 'yarrow');
+        expect(decoded.version, 1);
+        expect(decoded.lines.single.position, 1);
+        expect(decoded.lines.single.inferredValue, 6);
+        expect(decoded.inferredLineValues, [6]);
+      },
+    );
   });
 
   group('calculatePrimaryHexagramId', () {
@@ -103,6 +215,21 @@ void main() {
       final result = service.calculateResultingHexagramId([9, 7, 7, 7, 7, 7]);
       expect(result, isNotNull);
       expect(result, isNot(1));
+    });
+  });
+
+  group('calculateMutualHexagramId', () {
+    test('all yang keeps 乾 as mutual hexagram', () {
+      final id = service.calculateMutualHexagramId([7, 7, 7, 7, 7, 7]);
+      expect(id, 1);
+    });
+
+    test('uses lines 2-4 as lower trigram and lines 3-5 as upper trigram', () {
+      // 既濟 [陽, 陰, 陽, 陰, 陽, 陰] 的互卦：
+      // 下互 = 2,3,4 爻 = 陰陽陰；上互 = 3,4,5 爻 = 陽陰陽；
+      // 合成 [陰, 陽, 陰, 陽, 陰, 陽] = 未濟。
+      final id = service.calculateMutualHexagramId([7, 8, 7, 8, 7, 8]);
+      expect(id, 64);
     });
   });
 }

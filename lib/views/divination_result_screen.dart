@@ -16,18 +16,21 @@ import '../../constants/ai_config.dart';
 import '../../providers/database_provider.dart';
 import '../../providers/usage_provider.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'widgets/ai_markdown_style.dart';
 
 class DivinationResultScreen extends ConsumerWidget {
   final List<int>
   lines; // [6, 7, 8, 9] mapped values, 6 elements, index 0 is bottom
   final String question;
   final String method;
+  final String? methodDetailJson;
 
   const DivinationResultScreen({
     super.key,
     required this.lines,
     required this.question,
     required this.method,
+    this.methodDetailJson,
   });
 
   @override
@@ -61,6 +64,8 @@ class DivinationResultScreen extends ConsumerWidget {
         Hexagram? resultingHex = resultingId != null
             ? hexRepository.getById(resultingId)
             : null;
+        final mutualId = divinationService.calculateMutualHexagramId(lines);
+        final mutualHex = hexRepository.getById(mutualId);
 
         // 3. Get guidance
         String guidance = interpreter.getInterpretationGuidance(lines);
@@ -102,6 +107,15 @@ class DivinationResultScreen extends ConsumerWidget {
                         ),
                         const SizedBox(height: 12),
                         Text(
+                          '朱熹解卦法則：協助判斷應優先閱讀哪些卦爻辭。',
+                          style: TextStyle(
+                            color: Colors.grey[300],
+                            fontSize: 13,
+                            height: 1.5,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
                           guidance,
                           style: const TextStyle(fontSize: 16, height: 1.5),
                         ),
@@ -138,6 +152,8 @@ class DivinationResultScreen extends ConsumerWidget {
                       ),
                   ],
                 ),
+                const SizedBox(height: 16),
+                _buildTerminologyHints(context, hasChangingLines),
 
                 const SizedBox(height: 48),
                 // Main Call to Action: AI Interpretation
@@ -158,6 +174,7 @@ class DivinationResultScreen extends ConsumerWidget {
                               method: method,
                               primaryHexagramId: primaryId,
                               resultingHexagramId: resultingId,
+                              methodDetailJson: methodDetailJson,
                             );
                             newRecord.rawHexagramNumbers = lines;
 
@@ -182,6 +199,7 @@ class DivinationResultScreen extends ConsumerWidget {
                                 question,
                                 primaryHex,
                                 resultingHex,
+                                mutualHex,
                                 guidance,
                                 savedRecord.id,
                                 lines,
@@ -218,8 +236,18 @@ class DivinationResultScreen extends ConsumerWidget {
                             method: method,
                             primaryHexagramId: primaryId,
                             resultingHexagramId: resultingId,
+                            methodDetailJson: methodDetailJson,
                           );
                           newRecord.rawHexagramNumbers = lines;
+
+                          final movingLines = <int>[];
+                          for (int i = 0; i < lines.length; i++) {
+                            if (lines[i] == 6 || lines[i] == 9) {
+                              movingLines.add(i + 1);
+                            }
+                          }
+                          newRecord.changingLines = movingLines;
+
                           recordsNotifier.addRecord(newRecord);
 
                           if (context.mounted) {
@@ -250,12 +278,49 @@ class DivinationResultScreen extends ConsumerWidget {
     );
   }
 
+  Widget _buildTerminologyHints(BuildContext context, bool hasChangingLines) {
+    final hints = [
+      '本卦：目前情境的主象。',
+      if (hasChangingLines) '之卦：有變爻時，象徵事情可能轉向的方向。',
+      if (hasChangingLines) '變爻：這次卦象中特別需要留意的變動位置。',
+    ];
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.72),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.white12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: hints
+            .map(
+              (hint) => Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Text(
+                  hint,
+                  style: TextStyle(
+                    color: Colors.grey[300],
+                    fontSize: 13,
+                    height: 1.45,
+                  ),
+                ),
+              ),
+            )
+            .toList(),
+      ),
+    );
+  }
+
   void _showAIDialog(
     BuildContext context,
     WidgetRef ref,
     String question,
     Hexagram primaryHexagram,
     Hexagram? resultingHexagram,
+    Hexagram? mutualHexagram,
     String guidance,
     int? recordId,
     List<int> lines,
@@ -268,6 +333,7 @@ class DivinationResultScreen extends ConsumerWidget {
           question: question,
           primaryHexagram: primaryHexagram,
           resultingHexagram: resultingHexagram,
+          mutualHexagram: mutualHexagram,
           guidance: guidance,
           recordId: recordId,
           lines: lines,
@@ -281,6 +347,7 @@ class _AIDialogContent extends ConsumerStatefulWidget {
   final String question;
   final Hexagram primaryHexagram;
   final Hexagram? resultingHexagram;
+  final Hexagram? mutualHexagram;
   final String guidance;
   final int? recordId;
   final List<int> lines;
@@ -289,6 +356,7 @@ class _AIDialogContent extends ConsumerStatefulWidget {
     required this.question,
     required this.primaryHexagram,
     this.resultingHexagram,
+    this.mutualHexagram,
     required this.guidance,
     this.recordId,
     required this.lines,
@@ -315,6 +383,7 @@ class _AIDialogContentState extends ConsumerState<_AIDialogContent> {
           question: widget.question,
           primaryHexagram: widget.primaryHexagram,
           resultingHexagram: widget.resultingHexagram,
+          mutualHexagram: widget.mutualHexagram,
           guidance: widget.guidance,
           lines: widget.lines,
         );
@@ -332,7 +401,9 @@ class _AIDialogContentState extends ConsumerState<_AIDialogContent> {
     AdService.showRewardedAd(
       onRewardEarned: (reward) async {
         // 使用 AIConfig 定義的固定獎勵次數
-        await ref.read(aiCreditsProvider.notifier).addCredits(AIConfig.adRewardCredits);
+        await ref
+            .read(aiCreditsProvider.notifier)
+            .addCredits(AIConfig.adRewardCredits);
         if (mounted) {
           setState(() {
             _isLoadingAd = false;
@@ -431,9 +502,7 @@ class _AIDialogContentState extends ConsumerState<_AIDialogContent> {
                 children: [
                   MarkdownBody(
                     data: snapshot.data ?? '',
-                    styleSheet: MarkdownStyleSheet.fromTheme(
-                      Theme.of(context),
-                    ).copyWith(p: const TextStyle(fontSize: 16, height: 1.6)),
+                    styleSheet: buildAIMarkdownStyle(context),
                   ),
                 ],
               ),
