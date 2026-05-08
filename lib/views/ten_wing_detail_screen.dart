@@ -18,6 +18,7 @@ class TenWingDetailScreen extends StatelessWidget {
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
         child: Container(
+          width: double.infinity,
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surface,

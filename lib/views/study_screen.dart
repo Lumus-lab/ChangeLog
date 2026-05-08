@@ -97,10 +97,17 @@ class _StudyScreenState extends ConsumerState<StudyScreen>
                 );
               }
 
+              final width = MediaQuery.of(context).size.width;
+              final crossAxisCount = width > 900
+                  ? 4
+                  : width > 600
+                      ? 3
+                      : 2;
+
               return GridView.builder(
                 padding: const EdgeInsets.all(16),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: crossAxisCount,
                   crossAxisSpacing: 16,
                   mainAxisSpacing: 16,
                   childAspectRatio: 0.85,
